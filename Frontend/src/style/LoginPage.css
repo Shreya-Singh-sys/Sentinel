@@ -1,0 +1,397 @@
+.config-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  color: #94a3b8; /* slate-400 */
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-left: 0.5rem;
+}
+
+.config-input {
+  width: 100%;
+  background-color: #f8fafc; /* slate-50 */
+  border: 2px solid #f1f5f9; /* slate-100 */
+  padding: 1.1rem 1.1rem 1.1rem 3.5rem; /* Space for the left icon */
+  border-radius: 1.25rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #334155;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.config-input:focus {
+  border-color: #eb1c1c; /* violet-600 */
+  background-color: white;
+  box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.1);
+}
+
+.input-icon-left {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #cbd5e1; /* slate-300 */
+  transition: color 0.3s ease;
+}
+
+.config-input:focus + .input-icon-left,
+.relative:focus-within .input-icon-left {
+  color: #eb1c1c;
+}
+
+/* Ensure the header text and footer are bold for the "Production Ready" look */
+.font-black {
+  font-weight: 900;
+}
+
+.tracking-widest {
+  letter-spacing: 0.1em;
+}
+
+/* Active Login Page Styles */
+.auth-page-root {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.blob-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+}
+
+.blob-violet {
+  top: 5%;
+  right: 10%;
+  width: 600px;
+  height: 600px;
+  background-color: rgba(139, 92, 246, 0.2);
+}
+
+.blob-pink {
+  bottom: 10%;
+  left: 5%;
+  width: 500px;
+  height: 500px;
+  background-color: rgba(244, 114, 182, 0.15);
+}
+
+.perspective-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  height: 570px;
+  z-index: 10;
+  perspective: 2000px;
+}
+
+.auth-card {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(32px);
+  border-radius: 3rem;
+  border: 1px solid #ffffff;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18);
+  display: flex;
+  overflow: hidden;
+}
+
+.auth-card.reverse {
+  flex-direction: row-reverse;
+}
+
+.auth-sidebar {
+  width: 50.66%;
+  background: linear-gradient(to right, #f43f5e, #fb923c);
+  padding: 3rem;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.14), transparent 60%);
+}
+
+.sidebar-title {
+  font-size: 3.75rem;
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  margin-bottom: 1.5rem;
+  z-index: 10;
+}
+
+.sidebar-subtitle {
+  color: #ddd6fe;
+  font-weight: 500;
+  z-index: 10;
+  opacity: 0.9;
+}
+
+.bubble {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.b1 { width: 80px; height: 80px; top: -20px; left: -20px; }
+.b2 { width: 130px; height: 130px; bottom: 40px; right: -40px; }
+.b3 { width: 50px; height: 50px; top: 20%; right: 40px; }
+.b4 { width: 40px; height: 40px; bottom: 20%; left: 30px; }
+.b5 { width: 60px; height: 60px; top: 10%; right: 15%; }
+.b6 { width: 25px; height: 25px; top: 50%; left: 10%; }
+
+.auth-form-area {
+  width: 58.34%;
+  padding: 3rem 5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.form-category {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #eb1c1c;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  margin-bottom: 0.5rem;
+}
+
+.form-title {
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.form-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.btn-submit {
+  width: 100%;
+  background: linear-gradient(to right, #f43f5e, #fb923c);
+  color: white;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  font-weight: 900;
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  background-color: #6d28d9;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-label {
+  font-size: 10px;
+  font-weight: 900;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.input-field-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.input-field {
+  width: 100%;
+  background-color: rgba(241, 245, 249, 0.5);
+  border: 2px solid #f1f5f9;
+  padding: 1rem 1rem 1rem 3.5rem;
+  border-radius: 1rem;
+  outline: none;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.input-field:focus {
+  border-color: #eb1c1c;
+  background-color: white;
+}
+
+.form-footer {
+  margin-top: 3rem;
+  text-align: center;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #eb1c1c;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+/* ... (Aapka purana CSS yahan tak same rahega) ... */
+
+/* Extra classes for transition fix */
+.auth-page-root {
+  position: absolute; /* Pages overlap na karein transition ke waqt */
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+
+.perspective-container {
+  perspective: 2000px;
+  transform-style: preserve-3d;
+}
+
+.auth-card {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  /* Smooth transition for layout flip */
+  transition: flex-direction 0.3s ease;
+}
+
+/* Back button style */
+.back-btn {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 50;
+  border: 1px solid #ddd6fe;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #eb1c1c;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.1);
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background-color: white;
+  transform: translateY(-2px);
+}
+
+
+
+
+
+
+.form-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 1.5rem;
+  
+  /* Scrolling ke liye ye lines zaroori hain */
+  max-height: 320px; /* Box ke size ke hisaab se height */
+  overflow-y: auto;
+  padding-right: 9px; /* Scrollbar ke liye thodi jagah */
+}
+
+/* Scrollbar ko sundar banane ke liye (Optional) */
+.form-inputs::-webkit-scrollbar {
+  width: 3px;
+}
+
+.form-inputs::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.form-inputs::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+
+.form-inputs::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+
+
+
+
+.role-selector {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.role-dropdown {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid #f1f5f9;
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #334155;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.role-dropdown:focus {
+  border-color: #7c3aed;
+}
+
+.file-input {
+  padding-top: 0.7rem !important;
+  cursor: pointer;
+}
+
+/* Form inputs container height adjust karein scrolling ke liye */
+.form-inputs {
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-top: 1.5rem;
+}
