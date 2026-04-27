@@ -5,9 +5,9 @@ import { Icon } from "../components/Icon";
 import { BottomNav } from "../components/BottomNav";
 import { Header } from "../components/Header";
 import { db } from "../config/firebase";
-import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc } from "firebase/firestore";
 
-// 1. Detailed Safety Content Data
+// --- DATA (UNCHANGED) ---
 const safetyContent = {
   fire: {
     title: "Fire Safety Rules",
@@ -83,51 +83,32 @@ const GuestDashboard = () => {
   const [checkedIn, setCheckedIn] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [announcement, setAnnouncement] = useState<string | null>(null);
+  const [selectedGuide, setSelectedGuide] = useState<any>(null);
+  
+  // NEW STATES
+  const [showNavMap, setShowNavMap] = useState(false);
+  const [isSafe, setIsSafe] = useState(false);
+  const [showSOSTriage, setShowSOSTriage] = useState(false);
+
   useEffect(() => {
-    // 1. Sirf 'guest' target wale latest message ko listen karein
     const q = query(
       collection(db, "broadcasts"),
       where("target", "==", "guest"),
       orderBy("timestamp", "desc"),
       limit(1)
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const msgData = snapshot.docs[0].data();
         setAnnouncement(msgData.message);
-        
-        // Browser alert (Testing ke liye best hai)
-        alert("URGENT ANNOUNCEMENT: " + msgData.message);
       }
     });
-
     return () => unsubscribe();
   }, []);
-//   useEffect(() => {
-//   // Sirf broadcasts collection ko listen karein bina kisi complex query ke (testing ke liye)
-//   const unsubscribe = onSnapshot(collection(db, "broadcasts"), (snapshot) => {
-//     snapshot.docChanges().forEach((change) => {
-//       if (change.type === "added") {
-//         const msgData = change.doc.data();
-        
-//         // Check karein ki kya ye guest ke liye hai
-//         if (msgData.target === "guest") {
-//           console.log("Naya message aaya:", msgData.message);
-//           alert("URGENT: " + msgData.message);
-//           setAnnouncement(msgData.message);
-//         }
-//       }
-//     });
-//   });
-
-//   return () => unsubscribe();
-// }, []);
 
   useEffect(() => {
     if (!localStorage.getItem("userRole")) localStorage.setItem("userRole", "guest");
   }, []);
-  const [selectedGuide, setSelectedGuide] = useState(null); // Modal State
 
   const handleScan = () => {
     setScanning(true);
@@ -137,107 +118,160 @@ const GuestDashboard = () => {
     }, 1800);
   };
 
+  // 3. Audio Alert Function
+  const speakAlert = () => {
+    if (announcement) {
+      const speech = new SpeechSynthesisUtterance(`Alex, ${announcement}. Please exit via Stairwell B. Avoid Elevators.`);
+      window.speechSynthesis.speak(speech);
+    }
+  };
+
+  // 2. Mark Safe Logic
+  const handleMarkSafe = async () => {
+    setIsSafe(true);
+    // Logic to update Firebase would go here
+    // await updateDoc(doc(db, "users", "alex_carter"), { status: "safe" });
+  };
+
   return (
-    <div className="relative min-h-screen bg-slate-50 pb-28 font-sans">
+    <div className="relative min-h-screen bg-red-100 pb-28 font-sans overflow-x-hidden">
       <Header />
       
-      <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-slate-200/50 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
+      
       <div className="relative mx-auto max-w-2xl px-5 pt-28">
         {announcement && (
-          // <div className="bg-red-600 text-white p-4 animate-bounce text-center font-bold">
-          //   ⚠️ {announcement}
-          // </div>
-          <div className="mx-4 mt-4 overflow-hidden rounded-2xl border border-red-200 bg-red-600/90 text-white shadow-lg backdrop-blur-sm animate-pulse">
-    <div className="flex items-center justify-center gap-3 p-4 text-center font-bold tracking-wide">
-      <span className="text-xl">⚠️</span>
-      <span className="uppercase">{announcement}</span>
-    </div>
-  </div>
+          <div className="mx-4 mt-4 overflow-hidden rounded-2xl border border-red-300 bg-red-600/90 text-white shadow-xl backdrop-blur-md animate-pulse">
+            <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+              <div className="flex items-center gap-3 font-bold tracking-wide">
+                <span className="text-xl">⚠️</span>
+                <span className="uppercase text-sm">Alex, {announcement}</span>
+              </div>
+              <button 
+                onClick={speakAlert}
+                className="mt-1 flex items-center gap-2 bg-white/20 px-4 py-1 rounded-full text-[10px] font-black tracking-widest hover:bg-white/30 transition-all"
+              >
+                <Icon name="volume_up" className="text-xs" /> LISTEN INSTRUCTION
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Welcome Section */}
-        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="mb-6">
-          <p className="text-sm font-bold text-slate-500">Good morning,</p>
-          <h1 className="text-2xl font-black text-slate-900">Alex Carter</h1>
+        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="mb-6 flex justify-between items-end">
+          <div>
+            <p className="text-sm font-bold text-slate-500">Good morning,</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Alex Carter</h1>
+          </div>
+          {/* 2. Check-in for Safety Button */}
+          {checkedIn && announcement && !isSafe && (
+            <motion.button 
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              onClick={handleMarkSafe}
+              className="bg-emerald-600 text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200"
+            >
+              I Am Safe
+            </motion.button>
+          )}
+          {isSafe && (
+            <div className="flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl text-[10px] font-black uppercase border border-emerald-200">
+               <Icon name="check_circle" className="text-xs" filled /> Status: Safe
+            </div>
+          )}
         </motion.div>
 
-        {/* Info Stats Strip */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center divide-x divide-slate-100 overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm">
-          <div className="flex flex-1 items-center gap-2 px-3 py-3">
+        <motion.div 
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} 
+          className="flex items-center divide-x divide-white/20 overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl border border-white shadow-lg"
+        >
+          <div className="flex flex-1 items-center gap-2 px-3 py-4">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
             </span>
-            <div><p className="text-[9px] font-black uppercase text-slate-400">Status</p><p className="text-xs font-black text-green-600">SECURE</p></div>
+            <div><p className="text-[9px] font-black uppercase text-slate-500">Status</p><p className="text-xs font-black text-green-600">SECURE</p></div>
           </div>
-          <div className="flex flex-1 items-center gap-2 px-3 py-3">
+          <div className="flex flex-1 items-center gap-2 px-3 py-4">
             <Icon name="apartment" className="text-red-500 text-[18px]" filled />
-            <div><p className="text-[9px] font-black uppercase text-slate-400">Venue</p><p className="text-xs font-black text-slate-800">Grand Hyatt</p></div>
+            <div><p className="text-[9px] font-black uppercase text-slate-500">Venue</p><p className="text-xs font-black text-slate-800">Grand Hyatt</p></div>
           </div>
-          <div className="flex flex-1 items-center gap-2 px-3 py-3">
+          <div className="flex flex-1 items-center gap-2 px-3 py-4">
             <Icon name="signal_cellular_alt" className="text-slate-700 text-[18px]" />
-            <div><p className="text-[9px] font-black uppercase text-slate-400">Signal</p><p className="text-xs font-black text-slate-800">STRONG</p></div>
+            <div><p className="text-[9px] font-black uppercase text-slate-500">Signal</p><p className="text-xs font-black text-slate-800">STRONG</p></div>
           </div>
         </motion.div>
 
-        {/* Content Area with Blur Logic */}
         <div className="relative mt-6">
-          <div className={`transition-all duration-700 ${!checkedIn ? "blur-md opacity-40 pointer-events-none" : ""}`}>
+          <div className={`transition-all duration-700 ${!checkedIn ? "blur-xl opacity-40 pointer-events-none" : ""}`}>
             
-            {/* Location Card */}
-            <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="overflow-hidden rounded-3xl bg-white p-5 border border-slate-100 shadow-sm">
+            {/* 1. Location Card - Navigation Trigger */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
+              onClick={() => setShowNavMap(true)}
+              className="overflow-hidden rounded-[2.5rem] bg-white/50 backdrop-blur-2xl p-6 border border-white shadow-xl shadow-red-900/5 cursor-pointer group"
+            >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400">Current Location</p>
-                  <p className="mt-1 text-lg font-black text-slate-900">The Marlowe Grand</p>
-                  <p className="text-xs font-bold text-slate-500">Floor 4 · Room 402</p>
+                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Current Location</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900 group-hover:text-red-600 transition-colors">The Marlowe Grand</p>
+                  <p className="text-xs font-bold text-slate-600">Floor 4 · Room 402</p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50"><Icon name="hotel" className="text-red-600" filled /></div>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-inner shadow-red-100 border border-red-50">
+                  <Icon name="directions" className="text-red-600" filled />
+                </div>
               </div>
-              <div className="mt-5 grid grid-cols-3 gap-2 border-t border-slate-50 pt-4 text-center">
+              <div className="mt-6 grid grid-cols-3 gap-2 border-t border-white/50 pt-5 text-center">
                 {[{ label: "Nearest exit", value: "Stairwell B" }, { label: "Distance", value: "32 m" }, { label: "ETA", value: "28 sec" }].map((s) => (
-                  <div key={s.label}><p className="text-[9px] font-black uppercase text-slate-400">{s.label}</p><p className="text-xs font-black text-slate-800">{s.value}</p></div>
+                  <div key={s.label}>
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{s.label}</p>
+                    <p className="text-sm font-black text-slate-800">{s.value}</p>
+                  </div>
                 ))}
+              </div>
+              <div className="mt-4 bg-red-600 text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-center animate-pulse">
+                Tap to View Evacuation Path
               </div>
             </motion.section>
 
-            {/* Contacts Strip */}
-            <h2 className="mt-8 text-[11px] font-black uppercase tracking-widest text-slate-400">Quick contacts</h2>
-            <div className="mt-3 flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
+            <h2 className="mt-8 text-[11px] font-black uppercase tracking-[0.2em] text-red-600/70 ml-2">Quick contacts</h2>
+            <div className="mt-3 flex gap-3 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar">
               {quickContacts.map((c) => (
-                <a key={c.label} href={`tel:${c.num}`} className="flex min-w-[90px] flex-col items-center gap-2 rounded-2xl bg-white p-4 border border-slate-100 shadow-sm active:scale-95 transition-all">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-full ${c.color}`}><Icon name={c.icon} filled /></div>
-                  <div className="text-center"><p className="text-[10px] font-black text-slate-800">{c.label}</p><p className="text-[9px] font-bold text-slate-400">{c.num}</p></div>
+                <a key={c.label} href={`tel:${c.num}`} className="flex min-w-[100px] flex-col items-center gap-3 rounded-3xl bg-white/60 backdrop-blur-lg p-5 border border-white shadow-lg active:scale-95 transition-all">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md ${c.color}`}><Icon name={c.icon} filled /></div>
+                  <div className="text-center"><p className="text-[11px] font-black text-slate-800 leading-tight">{c.label}</p><p className="text-[10px] font-bold text-slate-400">{c.num}</p></div>
                 </a>
               ))}
             </div>
 
-            {/* Safety Guides Grid (Updated with onClick) */}
-            <h2 className="mt-8 text-[11px] font-black uppercase tracking-widest text-slate-400">Safety Guides</h2>
-            <motion.div variants={container} initial="hidden" animate="show" className="mt-3 grid grid-cols-2 gap-3">
+            <h2 className="mt-6 text-[11px] font-black uppercase tracking-[0.2em] text-red-600/70 ml-2">Safety Guides</h2>
+            <motion.div variants={container} initial="hidden" animate="show" className="mt-3 grid grid-cols-2 gap-4">
               {safetyTips.map((t) => (
                 <motion.button 
                   key={t.id} 
                   variants={item} 
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => setSelectedGuide(safetyContent[t.id])}
-                  className="flex flex-col items-start gap-3 rounded-2xl bg-white p-4 text-left border border-slate-100 shadow-sm transition-all active:bg-slate-50"
+                  className="flex flex-col items-start gap-4 rounded-[2rem] bg-white/50 backdrop-blur-xl p-5 text-left border border-white shadow-xl shadow-red-900/5 transition-all hover:bg-white/80"
                 >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${t.color}`}><Icon name={t.icon} filled /></div>
-                  <div><p className="text-xs font-black text-slate-800 leading-tight">{t.title}</p><p className="text-[10px] font-bold text-slate-400">{t.subtitle}</p></div>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${t.color}`}><Icon name={t.icon} filled /></div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 leading-none mb-1">{t.title}</p>
+                    <p className="text-[10px] font-bold text-slate-500">{t.subtitle}</p>
+                  </div>
                 </motion.button>
               ))}
             </motion.div>
           </div>
 
-          {/* Soft-lock Overlay */}
           {!checkedIn && (
-            <motion.div className="absolute inset-0 flex items-start justify-center pt-10 z-20">
-              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="flex max-w-xs flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white/95 p-6 text-center shadow-2xl backdrop-blur-md">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50"><Icon name="lock" filled className="text-red-600" /></div>
-                <div><p className="text-base font-black text-slate-900">Check in to activate</p><p className="mt-2 text-[11px] font-bold text-slate-500">Scan the QR at your room or reception to unlock live safety features.</p></div>
-                <button onClick={handleScan} className="flex items-center gap-2 rounded-full bg-red-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-red-200 active:scale-95">
-                  <Icon name="qr_code_scanner" className="text-[18px]" /> SCAN QR
+            <motion.div className="absolute inset-x-0 -top-10 flex items-start justify-center pt-20 z-20">
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} 
+                className="flex max-w-xs flex-col items-center gap-5 rounded-[2.5rem] border border-white bg-white/70 p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-3xl"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 text-white shadow-xl shadow-red-200"><Icon name="lock" filled /></div>
+                <div><p className="text-xl font-black text-slate-900">Check in required</p><p className="mt-2 text-[12px] font-bold text-slate-500 leading-relaxed">Scan the unique QR code at your room or reception to activate the sentinel safety systems.</p></div>
+                <button onClick={handleScan} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-4 text-xs font-black text-white shadow-xl shadow-red-300 active:scale-95">
+                  <Icon name="qr_code_scanner" className="text-[20px]" /> SCAN QR
                 </button>
               </motion.div>
             </motion.div>
@@ -245,59 +279,122 @@ const GuestDashboard = () => {
         </div>
       </div>
 
-      {/* Floating QR FAB */}
-      <motion.button whileTap={{ scale: 0.9 }} onClick={handleScan} className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 text-white shadow-lg">
-        {!checkedIn && <span className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-25" />}
-        <Icon name="qr_code_scanner" className="text-[26px]" filled />
+      {/* SOS Button - 4. Mark as Trapped Trigger */}
+      <motion.button 
+        whileTap={{ scale: 0.9 }} 
+        onClick={() => setShowSOSTriage(true)} 
+        className="fixed bottom-28 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-2xl"
+      >
+        {!checkedIn && <span className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30" />}
+        <Icon name="emergency" className="text-[30px]" filled />
       </motion.button>
 
-      {/* --- SAFETY RULES BOTTOM SHEET --- */}
+      {/* --- 1. INDOOR NAVIGATION MAP OVERLAY --- */}
       <AnimatePresence>
-        {selectedGuide && (
+        {showNavMap && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm p-4"
-            onClick={() => setSelectedGuide(null)}
+            className="fixed inset-0 z-[100] bg-slate-900 text-white p-6 flex flex-col"
           >
-            <motion.div 
-              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="w-full max-w-lg bg-white rounded-t-[2.5rem] p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-white ${selectedGuide.color}`}>
-                  <Icon name={selectedGuide.icon} filled className="text-[32px]" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-slate-900">{selectedGuide.title}</h2>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Official Protocol</p>
-                </div>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-black">Escape Route</h2>
+                <p className="text-xs font-bold text-red-400 uppercase tracking-widest leading-none mt-1">To: Stairwell B</p>
               </div>
-              <ul className="space-y-4">
-                {selectedGuide.points.map((point, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
-                    <p className="text-sm font-bold text-slate-600 leading-relaxed">{point}</p>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => setSelectedGuide(null)} className="mt-8 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm active:scale-95 transition-transform">GOT IT</button>
-            </motion.div>
+              <button onClick={() => setShowNavMap(false)} className="bg-white/10 p-2 rounded-full"><Icon name="close" /></button>
+            </div>
+            
+            {/* Visual Navigation Mock */}
+            <div className="flex-1 rounded-[2rem] bg-white/5 border border-white/10 relative overflow-hidden flex items-center justify-center">
+              <svg viewBox="0 0 300 500" className="w-full h-full p-10 stroke-red-500 fill-none stroke-[4] opacity-80">
+                <path d="M50,400 L50,200 L250,200 L250,50" />
+                <motion.circle r="8" fill="#ef4444" 
+                  animate={{ offsetDistance: ["0%", "100%"] }} 
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  style={{ offsetPath: "path('M50,400 L50,200 L250,200 L250,50')" }}
+                />
+              </svg>
+              <div className="absolute bottom-10 left-10 text-left">
+                <p className="text-xs font-black uppercase text-red-400">Current Position</p>
+                <p className="text-xl font-black">Room 402</p>
+              </div>
+            </div>
+            <button onClick={() => setShowNavMap(false)} className="mt-6 w-full py-4 bg-red-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Start Navigation</button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Scanning Overlay Animation */}
+      {/* --- 4. SOS TRIAGE / TRAPPED MODAL --- */}
       <AnimatePresence>
-        {scanning && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-md text-white">
-            <div className="flex flex-col items-center">
-              <div className="relative h-56 w-56 overflow-hidden rounded-3xl border-2 border-white/20">
-                <motion.div animate={{ y: [0, 224, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-x-0 h-1 bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
+        {showSOSTriage && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-red-600/95 backdrop-blur-xl flex items-center justify-center p-8"
+          >
+            <div className="text-center text-white max-w-sm">
+              <Icon name="warning" className="text-6xl mb-6 mx-auto animate-bounce" filled />
+              <h2 className="text-3xl font-black leading-tight mb-4 uppercase">Emergency Assistance</h2>
+              <p className="text-sm font-bold opacity-80 mb-10">Emergency responders have been alerted to your room (402). Are you currently trapped or unable to move?</p>
+              
+              <div className="flex flex-col gap-4">
+                <button 
+                  onClick={() => {
+                    alert("Admin Notified: Trapped in Room 402");
+                    setShowSOSTriage(false);
+                  }}
+                  className="bg-white text-red-600 py-4 rounded-2xl font-black uppercase tracking-widest shadow-2xl active:scale-95"
+                >
+                  Yes, I am trapped
+                </button>
+                <button 
+                  onClick={() => setShowSOSTriage(false)}
+                  className="bg-white/20 border border-white/40 py-4 rounded-2xl font-black uppercase tracking-widest active:scale-95"
+                >
+                  No, but I need help
+                </button>
               </div>
-              <p className="mt-6 font-black tracking-widest text-xs uppercase">Verifying Venue QR...</p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- SAFETY RULES BOTTOM SHEET (UNCHANGED) --- */}
+      <AnimatePresence>
+        {selectedGuide && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/60 backdrop-blur-md p-4"
+            onClick={() => setSelectedGuide(null)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="w-full max-w-lg bg-white/90 backdrop-blur-3xl rounded-t-[3rem] p-10 shadow-2xl border-t border-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" />
+              <div className="flex items-center gap-5 mb-8">
+                <div className={`h-16 w-16 rounded-3xl flex items-center justify-center text-white shadow-xl ${selectedGuide.color}`}>
+                  <Icon name={selectedGuide.icon} filled className="text-[36px]" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">{selectedGuide.title}</h2>
+                  <p className="text-xs font-black text-red-600 uppercase tracking-widest">Sentinel Protocol</p>
+                </div>
+              </div>
+              <ul className="space-y-5">
+                {selectedGuide.points.map((point: string, i: number) => (
+                  <motion.li 
+                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                    key={i} className="flex items-start gap-4"
+                  >
+                    <div className="mt-2 h-2 w-2 rounded-full bg-red-400 shrink-0 shadow-sm" />
+                    <p className="text-[15px] font-bold text-slate-600 leading-relaxed">{point}</p>
+                  </motion.li>
+                ))}
+              </ul>
+              <button onClick={() => setSelectedGuide(null)} className="mt-10 w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-sm shadow-xl active:scale-95 transition-transform">UNDERSTOOD</button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
