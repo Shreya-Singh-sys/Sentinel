@@ -407,7 +407,7 @@ const handleEmergencyActivation = async () => {
 };
 const shareResponderLink = () => {
   // Aapke naya page ka route (e.g., /responder-view/project-id)
-  const responderUrl = `${window.location.origin}/responder-live-view`;
+  const responderUrl = `${window.location.origin}/responder`;
 
   // Navigator API se link copy ya share karein
   if (navigator.share) {
@@ -415,7 +415,7 @@ const shareResponderLink = () => {
       title: 'Emergency Responder Access',
       text: 'Live evacuation and hazard tracking link.',
       url: responderUrl,
-    });
+    }). catch(err => console.log("Share failed:", err));
   } else {
     // Fallback: Copy to clipboard
     navigator.clipboard.writeText(responderUrl);

@@ -6,10 +6,7 @@ import { useI18n } from "../i18n/I18nProvider";
 const Splash = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
-  useEffect(() => {
-    const t = setTimeout(() => navigate("/login"), 3000);
-    return () => clearTimeout(t);
-  }, [navigate]);
+  
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden gradient-emergency">
@@ -45,3 +42,16 @@ const Splash = () => {
 };
 
 export default Splash;
+// import { Logo } from "../components/Logo";
+
+// const Splash = () => {
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-center bg-red-600 text-white">
+//       <Logo size={80} />
+//       <h1 className="text-4xl font-black mt-4">RESPONDER LIVE VIEW</h1>
+//       <p className="opacity-80">Crisis Simulator Real-time Feed</p>
+//     </div>
+//   );
+// };
+
+// export default Splash;

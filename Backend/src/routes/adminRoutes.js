@@ -21,5 +21,6 @@ const { getEmergencyInsight } = require('../controllers/geminiController');
 router.post('/trigger', checkRole('admin'), adminController.triggerEmergency);
 router.post('/clear', checkRole('admin'), adminController.clearEmergency);
 router.post('/get-ai-insight', getEmergencyInsight);
+router.post('/trigger-dispatch', getEmergencyInsight); // New route for dispatch
 
 module.exports = router;
