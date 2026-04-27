@@ -303,6 +303,8 @@ const [logs, setLogs] = useState([]);
 const [isAllRecordsOpen, setIsAllRecordsOpen] = useState(false);
 const [selectedLog, setSelectedLog] = useState(null);
 const [isEmergencyActive, setIsEmergencyActive] = useState(false);
+const [isEditing, setIsEditing] = useState(false);
+const [selectedZone, setSelectedZone] = useState<string | null>(null);
   useEffect(() => {
     // Check if db is defined to prevent crash
     if (!db) return;
@@ -728,6 +730,7 @@ useEffect(() => {
 
   return () => unsubscribe();
 }, []);
+
 // Example: Jab Admin broadcast bhej raha ho
 const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
   try { // 2. Try block start kiya
@@ -741,6 +744,8 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
     console.error("Error logging activity:", e);
   }
 };
+
+
 
 // Ise aise use karein:
 // logActivity("Evacuation broadcast sent", "warning", "Broadcast");
@@ -984,6 +989,7 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
                  <Pencil size={14}/> {isEditMode ? 'Exit Edit Mode' : 'Edit Map / Mark Hazards'}
                </button>
             </div>
+
           </div>
           
           <div className="p-5">

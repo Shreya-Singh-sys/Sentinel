@@ -377,10 +377,10 @@ const [alertOn, setAlertOn] = useState(false);
 
   // 2. Stats array ko render function ke andar rakhein taaki update ho sake
   const stats = [
-    { id: 'total', labelKey: 'stats.total', value: totalGuests, icon: 'groups', col: 'blue' },
-    { id: 'evacuated', labelKey: 'stats.evacuated', value: evacuated, icon: 'directions_run', col: 'emerald' },
-    { id: 'trapped', labelKey: 'stats.trapped', value: trappedCount, icon: 'report_problem', col: 'red' },
-    { id: 'staff', labelKey: 'stats.staff', value: activeStaff, icon: 'badge', col: 'amber' },
+    { id: 'total', labelKey: 'Total Guests', value: totalGuests, icon: 'groups', col: 'blue' },
+    { id: 'evacuated', labelKey: 'Evacuated', value: evacuated, icon: 'directions_run', col: 'emerald' },
+    { id: 'trapped', labelKey: 'Trapped', value: trappedCount, icon: 'report_problem', col: 'red' },
+    { id: 'staff', labelKey: 'Active Staff', value: activeStaff, icon: 'badge', col: 'amber' },
   ];
 
 useEffect(() => {

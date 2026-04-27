@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon";
 import { BottomNav } from "../components/BottomNav";
 import { Header } from "../components/Header";
-import { db } from "../config/firebase";
-import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc } from "firebase/firestore";
+import { db, auth } from "../config/firebase";
+import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, getDocs, getDoc } from "firebase/firestore";
 
 // --- DATA (UNCHANGED) ---
 const safetyContent = {
@@ -89,6 +89,75 @@ const GuestDashboard = () => {
   const [showNavMap, setShowNavMap] = useState(false);
   const [isSafe, setIsSafe] = useState(false);
   const [showSOSTriage, setShowSOSTriage] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [evacuationInfo, setEvacuationInfo] = useState({
+  exit: "Calculating...",
+  distance: "--",
+  eta: "--"
+});
+const [navData, setNavData] = useState({
+  path: "M50,400 L50,200 L250,200 L250,50", // Fallback path
+  target: "Stairwell B"
+});
+
+// useEffect(() => {
+//   const user = auth.currentUser;
+//   if (!user) return;
+
+//   const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+//     if (doc.exists() && doc.data().svgPath) {
+//       setNavData({
+//         path: doc.data().svgPath,
+//         target: doc.data().targetExit
+//       });
+//     }
+//   });
+//   return () => unsub();
+// }, []);
+useEffect(() => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const userRef = doc(db, "users", user.uid);
+  
+  const unsub = onSnapshot(userRef, (doc) => {
+    if (doc.exists()) {
+      const data = doc.data();
+      // 1. User ki profile details (Room Number etc.) save karein
+      setUserProfile(data); 
+      
+      // 2. Navigation path update karein (jo humne pehle kiya tha)
+      if (data.svgPath) {
+        setNavData({
+          path: data.svgPath,
+          target: data.targetExit || "Stairwell B"
+        });
+      }
+    }
+  });
+
+  return () => unsub();
+}, []);
+useEffect(() => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  // Real-time listener on user's personal evacuation data
+  const userRef = doc(db, "users", user.uid);
+  const unsub = onSnapshot(userRef, (doc) => {
+    if (doc.exists()) {
+      const data = doc.data();
+      setEvacuationInfo({
+        exit: data.nearestExit || "Searching...",
+        distance: data.distance || "0m",
+        eta: data.eta || "0s"
+      });
+    }
+  });
+
+  return () => unsub();
+}, []);
+
 
   useEffect(() => {
     const q = query(
@@ -132,6 +201,7 @@ const GuestDashboard = () => {
     // Logic to update Firebase would go here
     // await updateDoc(doc(db, "users", "alex_carter"), { status: "safe" });
   };
+  
 
   return (
     <div className="relative min-h-screen bg-red-100 pb-28 font-sans overflow-x-hidden">
@@ -160,7 +230,7 @@ const GuestDashboard = () => {
         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="mb-6 flex justify-between items-end">
           <div>
             <p className="text-sm font-bold text-slate-500">Good morning,</p>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Alex Carter</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">{userProfile?.name || auth.currentUser?.displayName || "Guest User"}</h1>
           </div>
           {/* 2. Check-in for Safety Button */}
           {checkedIn && announcement && !isSafe && (
@@ -213,20 +283,37 @@ const GuestDashboard = () => {
                 <div>
                   <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Current Location</p>
                   <p className="mt-1 text-2xl font-black text-slate-900 group-hover:text-red-600 transition-colors">The Marlowe Grand</p>
-                  <p className="text-xs font-bold text-slate-600">Floor 4 · Room 402</p>
+                  <p className="text-xs font-bold text-slate-600">Floor {userProfile?.floor || "4"} · Room {userProfile?.room || "402"}</p>
                 </div>
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-inner shadow-red-100 border border-red-50">
                   <Icon name="directions" className="text-red-600" filled />
                 </div>
               </div>
-              <div className="mt-6 grid grid-cols-3 gap-2 border-t border-white/50 pt-5 text-center">
+              {/* <div className="mt-6 grid grid-cols-3 gap-2 border-t border-white/50 pt-5 text-center">
                 {[{ label: "Nearest exit", value: "Stairwell B" }, { label: "Distance", value: "32 m" }, { label: "ETA", value: "28 sec" }].map((s) => (
                   <div key={s.label}>
                     <p className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{s.label}</p>
                     <p className="text-sm font-black text-slate-800">{s.value}</p>
                   </div>
                 ))}
-              </div>
+              </div> */}
+              <div className="mt-6 grid grid-cols-3 gap-2 border-t border-white/50 pt-5 text-center">
+  {[
+    { label: "Nearest exit", value: evacuationInfo.exit },
+    { label: "Distance", value: evacuationInfo.distance },
+    { label: "ETA", value: evacuationInfo.eta }
+  ].map((s) => (
+    <div key={s.label}>
+      <p className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">
+        {s.label}
+      </p>
+      <p className="text-sm font-black text-slate-800 transition-all duration-500">
+        {s.value}
+      </p>
+    </div>
+  ))}
+</div>
+              
               <div className="mt-4 bg-red-600 text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] text-center animate-pulse">
                 Tap to View Evacuation Path
               </div>
@@ -307,16 +394,16 @@ const GuestDashboard = () => {
             {/* Visual Navigation Mock */}
             <div className="flex-1 rounded-[2rem] bg-white/5 border border-white/10 relative overflow-hidden flex items-center justify-center">
               <svg viewBox="0 0 300 500" className="w-full h-full p-10 stroke-red-500 fill-none stroke-[4] opacity-80">
-                <path d="M50,400 L50,200 L250,200 L250,50" />
+                <path d={navData.path} />
                 <motion.circle r="8" fill="#ef4444" 
                   animate={{ offsetDistance: ["0%", "100%"] }} 
                   transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                  style={{ offsetPath: "path('M50,400 L50,200 L250,200 L250,50')" }}
+                  style={{ offsetPath: navData.path }}
                 />
               </svg>
               <div className="absolute bottom-10 left-10 text-left">
                 <p className="text-xs font-black uppercase text-red-400">Current Position</p>
-                <p className="text-xl font-black">Room 402</p>
+                <p className="text-xl font-black">Room {userProfile?.room || "402"}</p>
               </div>
             </div>
             <button onClick={() => setShowNavMap(false)} className="mt-6 w-full py-4 bg-red-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Start Navigation</button>

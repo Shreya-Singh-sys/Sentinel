@@ -1,23 +1,262 @@
-import React, { useState } from "react";
+// import React, { useState } from "react";
+// import { motion, AnimatePresence, type Variants } from "framer-motion";
+// import { User, Lock, Mail, MapPin, Building, Droplets, FileText, ArrowRight } from "lucide-react";
+// import { useNavigate } from "react-router-dom";
+// import "../style/LoginPage.css";
+// import { useI18n } from "../i18n/I18nProvider";
+
+// const cardVariants: Variants = {
+//   initial: { rotateY: -90, x: "15%", opacity: 0, skewY: -5 },
+//   animate: { 
+//     rotateY: 0, x: 0, opacity: 1, skewY: 0,
+//     transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }
+//   },
+//   exit: { 
+//     rotateY: 90, x: "-15%", opacity: 0, skewY: 5,
+//     transition: { duration: 0.5, ease: "easeIn" }
+//   },
+// };
+
+// // Bubbles Animation Function (Wapas Add Kiya)
+// const bubbleAnimate = (xRange: number[], yRange: number[], duration: number) => ({
+//   animate: { x: xRange, y: yRange },
+//   transition: { 
+//     duration: duration / 2, 
+//     repeat: Infinity, 
+//     repeatType: "reverse" as const,
+//     ease: "easeInOut" as const,
+//   }
+// });
+
+// export default function SignUpPage() {
+//   const navigate = useNavigate();
+//   const [role, setRole] = useState("guest");
+//   const { t } = useI18n();
+//   const roleLabel = t(`role.${role}`);
+
+//   const [formData, setFormData] = useState({
+//     fullName: "",
+//     email: "",
+//     password: "",
+//     confirmPassword: "",
+//     workingPlace: "", // staff ke liye
+//     bloodGroup: "",   // staff ke liye
+//     address: ""       // admin ke liye
+//   });
+//   const [loading, setLoading] = useState(false);
+
+//   // Input change handler
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     setFormData({ ...formData, [e.target.name]: e.target.value });
+//   };
+
+//   // --- SIGNUP LOGIC (BACKEND CALL) ---
+//   const handleRegister = async (e: React.FormEvent) => {
+//     e.preventDefault(); // Page refresh hone se rokne ke liye
+    
+//     if (formData.password !== formData.confirmPassword) {
+//       alert("Passwords do not match!");
+//       return;
+//     }
+
+//     setLoading(true);
+//     try {
+//       const response = await fetch("http://localhost:5000/api/auth/signup", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           email: formData.email,
+//           password: formData.password,
+//           role: role, // guest, staff, or admin
+//           fullName: formData.fullName,
+//           // Baki optional data bhi bhej sakte hain
+//           extraInfo: {
+//             address: formData.address,
+//             bloodGroup: formData.bloodGroup
+//           }
+//         }),
+//       });
+
+//       const data = await response.json();
+
+//       if (response.ok) {
+//         alert("Registration Successful!");
+//         navigate("/login"); // Login page par bhejein
+//       } else {
+//         alert(data.error || "Signup Failed");
+//       }
+//     } catch (error) {
+//       console.error("Error:", error);
+//       alert("Backend server se connect nahi ho paya!");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+//   return (
+//     <div className="auth-page-root" style={{ height: "100vh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+//       <button className="back-btn" onClick={() => navigate("/")}>{t("common.backToHome")}</button>
+      
+//       <div className="perspective-container" style={{ maxWidth: "1000px", width: "95%" }}> 
+//         <motion.div 
+//           className="auth-card reverse"
+//           style={{ height: "auto", minHeight: "fit-content", display: "flex", overflow: "hidden", position: "relative" }}
+//           initial="initial" animate="animate" exit="exit" variants={cardVariants}
+//         >
+//           {/* Sidebar Section (Wapas Bubbles Add Kiye) */}
+//           <div className="auth-sidebar" style={{ flex: "0 0 30%", position: "relative", overflow: "hidden" }}> 
+//             <div className="sidebar-overlay" style={{ position: "absolute", inset: 0, background: "inherit", zIndex: 1 }} />
+            
+//             {/* --- Animated Bubbles (WAPAS AAGAYE!) --- */}
+//             <motion.div className="bubble b1" {...bubbleAnimate([0, 15], [0, 25], 4)} style={{ position: "absolute", zIndex: 2 }} />
+//             <motion.div className="bubble b2" {...bubbleAnimate([0, -20], [0, -30], 6)} style={{ position: "absolute", zIndex: 2 }} />
+//             <motion.div className="bubble b3" {...bubbleAnimate([0, 10], [0, 15], 5)} style={{ position: "absolute", zIndex: 2 }} />
+//             <motion.div className="bubble b4" {...bubbleAnimate([0, -10], [0, 20], 7)} style={{ position: "absolute", zIndex: 2 }} />
+//             <motion.div className="bubble b5" {...bubbleAnimate([0, 20], [0, -10], 8)} style={{ position: "absolute", zIndex: 2 }} />
+//             <motion.div className="bubble b6" {...bubbleAnimate([0, -15], [0, -15], 9)} style={{ position: "absolute", zIndex: 2 }} />
+            
+//             <div style={{ zIndex: 10, position: "relative", padding: "40px 20px" }}>
+//                 <h2 className="sidebar-title" style={{fontSize: "2.2rem", lineHeight: "1", color: "white"}}>
+//                   {t("signup.joinAs", { role: roleLabel })}
+//                 </h2>
+//                 <p className="sidebar-subtitle" style={{ marginTop: "15px", fontSize: "0.9rem", color: "white", opacity: 0.9 }}>
+//                   {t("signup.createAccount", { role: roleLabel })}
+//                 </p>
+//             </div>
+//           </div>
+
+//           {/* Form Area Section (No Changes here, Spacing remains compact) */}
+//           <div className="auth-form-area" style={{ flex: "1", padding: "2rem 3rem", overflow: "visible" }}>
+//             <header className="form-header" style={{ marginBottom: "1rem" }}>
+//               <h3 className="form-category" style={{ fontSize: "0.7rem", color: "#e63946" }}>{t("signup.registration")}</h3>
+//               <h1 className="form-title" style={{ fontSize: "1.8rem", margin: "0" }}>{t("signup.title")}</h1>
+//             </header>
+
+//             <div className="role-selector" style={{ marginBottom: "1rem" }}>
+//               <label className="input-label" style={{ fontSize: "0.8rem" }}>{t("signup.selectRole")}</label>
+//               <select value={role} onChange={(e) => setRole(e.target.value)} className="role-dropdown">
+//                 <option value="guest">{t("role.guest")}</option>
+//                 <option value="staff">{t("role.staff")}</option>
+//                 <option value="admin">{t("role.admin")}</option>
+//               </select>
+//             </div>
+            
+//             <div className="form-inputs" style={{ 
+//               display: "grid", 
+//               gridTemplateColumns: "1fr 1fr", 
+//               gap: "0.8rem 1.2rem",
+//               overflow: "visible" 
+//             }}>
+//               <Input icon={<User />} label="Full Name" placeholder="Your Name" name="fullName" value={formData.fullName} onChange={handleChange}/>
+//               <Input icon={<Mail />} label="Email Address" placeholder="email@example.com" name="email" value={formData.email} onChange={handleChange} />
+
+//               <AnimatePresence mode="popLayout">
+//                 {role === "staff" && (
+//                   <>
+//                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="staff-1">
+//                       <Input icon={<Building />} label="Working Place" placeholder="Office Location" name="workingPlace" value={formData.workingPlace} onChange={handleChange} />
+//                     </motion.div>
+//                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="staff-2">
+//                       <Input icon={<Droplets />} label="Blood Group" placeholder="O+ve" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
+//                     </motion.div>
+//                   </>
+//                 )}
+
+//                 {role === "admin" && (
+//                   <>
+//                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="admin-1" style={{ gridColumn: "span 2" }}>
+//                       <Input icon={<MapPin />} label="Address" placeholder="Full Address" name="address" value={formData.address} onChange={handleChange} />
+//                     </motion.div>
+//                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="admin-2" style={{ gridColumn: "span 2" }}>
+//                       <div className="input-group">
+//                         <label className="input-label" style={{ fontSize: "0.75rem" }}>Map (PDF File)</label>
+//                         <div className="input-field-wrapper">
+//                           <div className="input-icon"><FileText size={16} /></div>
+//                           <input type="file" accept="application/pdf" className="input-field file-input" style={{ fontSize: "0.8rem" }} />
+//                         </div>
+//                       </div>
+//                     </motion.div>
+//                   </>
+//                 )}
+//               </AnimatePresence>
+
+//               <Input icon={<Lock />} label="Password" type="password" placeholder="••••••••" name="password" value={formData.password} onChange={handleChange} />
+//               <Input icon={<Lock />} label="Confirm Password" type="password" placeholder="••••••••" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
+//             </div>
+            
+//             <div style={{ marginTop: "1.5rem" }}>
+//               <button 
+//       onClick={handleRegister} 
+//       className="btn-submit" 
+//       disabled={loading}
+//       style={{ width: "100%", padding: "12px", borderRadius: "10px" }}
+//     >
+//       {loading ? "Registering..." : t("signup.registerAs", { role: roleLabel })} 
+//       <ArrowRight size={18} />
+//     </button>
+//                 {/* <button className="btn-submit" style={{ width: "100%", padding: "12px", borderRadius: "10px" }}>
+//                 {t("signup.registerAs", { role: roleLabel })} <ArrowRight size={18} />
+//                 </button> */}
+                
+//                 <footer className="form-footer" style={{ marginTop: "1rem", textAlign: "center" }}>
+//                 {t("signup.alreadyMember")} <button onClick={() => navigate("/login")} className="toggle-btn" style={{ color: "#e63946", background: "none", border: "none", cursor: "pointer", fontWeight: "bold" }}>{t("signup.logIn")}</button>
+//                 </footer>
+//             </div>
+//           </div>
+//         </motion.div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// // function Input({ icon, label, type = "text", placeholder }) {
+// //   return (
+// //     <div className="input-group" style={{ marginBottom: "0" }}>
+// //       <label className="input-label" style={{ fontSize: "0.7rem", marginBottom: "4px", display: "block" }}>{label}</label>
+// //       <div className="input-field-wrapper">
+// //         <div className="input-icon" style={{ left: "10px" }}>{React.cloneElement(icon, { size: 16 })}</div>
+// //         <input type={type} placeholder={placeholder} className="input-field" style={{ height: "40px", padding: "8px 10px 8px 35px", fontSize: "0.9rem" }} />
+// //       </div>
+// //     </div>
+// //   );
+// // }
+
+// function Input({ icon, label, type = "text", placeholder, name, value, onChange }: any) {
+//   return (
+//     <div className="input-group">
+//       <label className="input-label">{label}</label>
+//       <div className="input-field-wrapper">
+//         <div className="input-icon">
+//           {React.cloneElement(icon, { size: 16 })}
+//         </div>
+//         <input 
+//           name={name}      // Important!
+//           value={value}    // Important!
+//           onChange={onChange} // Important!
+//           type={type} 
+//           placeholder={placeholder} 
+//           className="input-field" 
+//         />
+//       </div>
+//     </div>
+//   );
+// }
+
+
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { User, Lock, Mail, MapPin, Building, Droplets, FileText, ArrowRight } from "lucide-react";
+import { User, Lock, Mail, MapPin, Building, Droplets, FileText, ArrowRight, ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "../style/LoginPage.css";
 import { useI18n } from "../i18n/I18nProvider";
 
 const cardVariants: Variants = {
-  initial: { rotateY: -90, x: "15%", opacity: 0, skewY: -5 },
+  initial: { opacity: 0, scale: 0.95, y: 20 },
   animate: { 
-    rotateY: 0, x: 0, opacity: 1, skewY: 0,
-    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }
-  },
-  exit: { 
-    rotateY: 90, x: "-15%", opacity: 0, skewY: 5,
-    transition: { duration: 0.5, ease: "easeIn" }
-  },
+    opacity: 1, scale: 1, y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+  }
 };
 
-// Bubbles Animation Function (Wapas Add Kiya)
 const bubbleAnimate = (xRange: number[], yRange: number[], duration: number) => ({
   animate: { x: xRange, y: yRange },
   transition: { 
@@ -39,26 +278,31 @@ export default function SignUpPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    workingPlace: "", // staff ke liye
-    bloodGroup: "",   // staff ke liye
-    address: ""       // admin ke liye
+    workingPlace: "",
+    bloodGroup: "",
+    address: ""
   });
   const [loading, setLoading] = useState(false);
 
-  // Input change handler
+  // Responsive Hook
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- SIGNUP LOGIC (BACKEND CALL) ---
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault(); // Page refresh hone se rokne ke liye
-    
+    e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-
     setLoading(true);
     try {
       const response = await fetch("http://localhost:5000/api/auth/signup", {
@@ -67,111 +311,162 @@ export default function SignUpPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          role: role, // guest, staff, or admin
+          role: role,
           fullName: formData.fullName,
-          // Baki optional data bhi bhej sakte hain
-          extraInfo: {
-            address: formData.address,
-            bloodGroup: formData.bloodGroup
-          }
+          extraInfo: { address: formData.address, bloodGroup: formData.bloodGroup }
         }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
         alert("Registration Successful!");
-        navigate("/login"); // Login page par bhejein
+        navigate("/login");
       } else {
         alert(data.error || "Signup Failed");
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Backend server se connect nahi ho paya!");
+      alert("Backend server connection failed!");
     } finally {
       setLoading(false);
     }
   };
+
   return (
-    <div className="auth-page-root" style={{ height: "100vh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <button className="back-btn" onClick={() => navigate("/")}>{t("common.backToHome")}</button>
+    <div className="auth-page-root" style={{ 
+      minHeight: "100vh", 
+      display: "flex", 
+      flexDirection: "column",
+      alignItems: "center", 
+      justifyContent: "center",
+      background: "#FDF8F8", 
+      padding: isMobile ? "10px" : "20px",
+      overflowX: "hidden"
+    }}>
+      {/* Back Button */}
+      <button 
+        onClick={() => navigate("/")} 
+        style={{ 
+          position: "absolute", top: "20px", left: "20px",
+          display: "flex", alignItems: "center", gap: "5px",
+          background: "white", border: "1px solid #eee", padding: "8px 15px",
+          borderRadius: "12px", fontSize: "12px", fontWeight: "bold", color: "#e63946",
+          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", zIndex: 100
+        }}
+      >
+        <ChevronLeft size={16} /> {t("common.backToHome")}
+      </button>
       
-      <div className="perspective-container" style={{ maxWidth: "1000px", width: "95%" }}> 
+      <div style={{ maxWidth: "1000px", width: "100%", display: "flex", justifyContent: "center" }}> 
         <motion.div 
-          className="auth-card reverse"
-          style={{ height: "auto", minHeight: "fit-content", display: "flex", overflow: "hidden", position: "relative" }}
-          initial="initial" animate="animate" exit="exit" variants={cardVariants}
+          style={{ 
+            display: "flex", 
+            flexDirection: isMobile ? "column" : "row-reverse", // Reverse layout for signup
+            width: "100%",
+            maxWidth: isMobile ? "400px" : "1000px",
+            background: "white",
+            borderRadius: isMobile ? "32px" : "24px",
+            overflow: "hidden",
+            boxShadow: "0 25px 50px -12px rgba(230, 57, 70, 0.15)",
+            border: "1px solid rgba(255,255,255,0.7)"
+          }}
+          initial="initial" animate="animate" variants={cardVariants}
         >
-          {/* Sidebar Section (Wapas Bubbles Add Kiye) */}
-          <div className="auth-sidebar" style={{ flex: "0 0 30%", position: "relative", overflow: "hidden" }}> 
-            <div className="sidebar-overlay" style={{ position: "absolute", inset: 0, background: "inherit", zIndex: 1 }} />
+          {/* Sidebar Section */}
+          <div style={{ 
+            flex: isMobile ? "none" : "0 0 30%", 
+            height: isMobile ? "140px" : "auto",
+            background: "linear-gradient(135deg, #e63946 0%, #f59e0b 100%)",
+            position: "relative",
+            padding: isMobile ? "30px 20px" : "50px 30px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: isMobile ? "center" : "flex-end"
+          }}>
+            {!isMobile && (
+              <>
+                <motion.div className="bubble b1" {...bubbleAnimate([0, 15], [0, 25], 4)} style={{ position: "absolute" }} />
+                <motion.div className="bubble b2" {...bubbleAnimate([0, -20], [0, -30], 6)} style={{ position: "absolute" }} />
+                <motion.div className="bubble b3" {...bubbleAnimate([0, 10], [0, 15], 5)} style={{ position: "absolute" }} />
+              </>
+            )}
             
-            {/* --- Animated Bubbles (WAPAS AAGAYE!) --- */}
-            <motion.div className="bubble b1" {...bubbleAnimate([0, 15], [0, 25], 4)} style={{ position: "absolute", zIndex: 2 }} />
-            <motion.div className="bubble b2" {...bubbleAnimate([0, -20], [0, -30], 6)} style={{ position: "absolute", zIndex: 2 }} />
-            <motion.div className="bubble b3" {...bubbleAnimate([0, 10], [0, 15], 5)} style={{ position: "absolute", zIndex: 2 }} />
-            <motion.div className="bubble b4" {...bubbleAnimate([0, -10], [0, 20], 7)} style={{ position: "absolute", zIndex: 2 }} />
-            <motion.div className="bubble b5" {...bubbleAnimate([0, 20], [0, -10], 8)} style={{ position: "absolute", zIndex: 2 }} />
-            <motion.div className="bubble b6" {...bubbleAnimate([0, -15], [0, -15], 9)} style={{ position: "absolute", zIndex: 2 }} />
-            
-            <div style={{ zIndex: 10, position: "relative", padding: "40px 20px" }}>
-                <h2 className="sidebar-title" style={{fontSize: "2.2rem", lineHeight: "1", color: "white"}}>
+            <div style={{ zIndex: 10, position: "relative" }}>
+                <h2 style={{ fontSize: isMobile ? "1.6rem" : "2.2rem", color: "white", fontWeight: 900, lineHeight: 1.1 }}>
                   {t("signup.joinAs", { role: roleLabel })}
                 </h2>
-                <p className="sidebar-subtitle" style={{ marginTop: "15px", fontSize: "0.9rem", color: "white", opacity: 0.9 }}>
-                  {t("signup.createAccount", { role: roleLabel })}
-                </p>
+                {!isMobile && (
+                  <p style={{ marginTop: "15px", color: "rgba(255,255,255,0.9)", fontSize: "0.9rem", lineHeight: 1.5 }}>
+                    {t("signup.createAccount", { role: roleLabel })}
+                  </p>
+                )}
             </div>
           </div>
 
-          {/* Form Area Section (No Changes here, Spacing remains compact) */}
-          <div className="auth-form-area" style={{ flex: "1", padding: "2rem 3rem", overflow: "visible" }}>
-            <header className="form-header" style={{ marginBottom: "1rem" }}>
-              <h3 className="form-category" style={{ fontSize: "0.7rem", color: "#e63946" }}>{t("signup.registration")}</h3>
-              <h1 className="form-title" style={{ fontSize: "1.8rem", margin: "0" }}>{t("signup.title")}</h1>
+          {/* Form Area Section */}
+          <div style={{ 
+            flex: 1, 
+            padding: isMobile ? "1.5rem" : "2.5rem 3rem",
+            display: "flex",
+            flexDirection: "column"
+          }}>
+            <header style={{ marginBottom: "1.5rem" }}>
+              <span style={{ color: "#e63946", fontSize: "11px", fontWeight: 900, letterSpacing: "2px", textTransform: "uppercase" }}>
+                {t("signup.registration")}
+              </span>
+              <h1 style={{ fontSize: isMobile ? "1.6rem" : "2.2rem", fontWeight: 900, color: "#1e293b", margin: "5px 0" }}>
+                {t("signup.title")}
+              </h1>
             </header>
 
-            <div className="role-selector" style={{ marginBottom: "1rem" }}>
-              <label className="input-label" style={{ fontSize: "0.8rem" }}>{t("signup.selectRole")}</label>
-              <select value={role} onChange={(e) => setRole(e.target.value)} className="role-dropdown">
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ fontSize: "11px", fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", marginBottom: "8px", display: "block" }}>
+                {t("signup.selectRole")}
+              </label>
+              <select 
+                value={role} 
+                onChange={(e) => setRole(e.target.value)}
+                style={{ 
+                  width: "100%", height: "48px", padding: "0 16px", borderRadius: "14px", 
+                  border: "1.5px solid #f1f5f9", fontSize: "14px", fontWeight: "bold", color: "#334155",
+                  background: "#f8fafc", outline: "none", cursor: "pointer"
+                }}
+              >
                 <option value="guest">{t("role.guest")}</option>
                 <option value="staff">{t("role.staff")}</option>
                 <option value="admin">{t("role.admin")}</option>
               </select>
             </div>
             
-            <div className="form-inputs" style={{ 
+            <div style={{ 
               display: "grid", 
-              gridTemplateColumns: "1fr 1fr", 
-              gap: "0.8rem 1.2rem",
-              overflow: "visible" 
+              gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
+              gap: isMobile ? "1rem" : "1rem 1.5rem"
             }}>
-              <Input icon={<User />} label="Full Name" placeholder="Your Name" name="fullName" value={formData.fullName} onChange={handleChange}/>
-              <Input icon={<Mail />} label="Email Address" placeholder="email@example.com" name="email" value={formData.email} onChange={handleChange} />
+              <Input icon={<User />} label="Full Name" placeholder="Alex Carter" name="fullName" value={formData.fullName} onChange={handleChange} isMobile={isMobile}/>
+              <Input icon={<Mail />} label="Email" placeholder="alex@sentinel.com" name="email" value={formData.email} onChange={handleChange} isMobile={isMobile}/>
 
               <AnimatePresence mode="popLayout">
                 {role === "staff" && (
                   <>
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="staff-1">
-                      <Input icon={<Building />} label="Working Place" placeholder="Office Location" name="workingPlace" value={formData.workingPlace} onChange={handleChange} />
+                    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} key="staff-1">
+                      <Input icon={<Building />} label="Working Place" placeholder="Grand Hyatt" name="workingPlace" value={formData.workingPlace} onChange={handleChange} isMobile={isMobile}/>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="staff-2">
-                      <Input icon={<Droplets />} label="Blood Group" placeholder="O+ve" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
+                    <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} key="staff-2">
+                      <Input icon={<Droplets />} label="Blood Group" placeholder="O+ve" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} isMobile={isMobile}/>
                     </motion.div>
                   </>
                 )}
 
                 {role === "admin" && (
                   <>
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="admin-1" style={{ gridColumn: "span 2" }}>
-                      <Input icon={<MapPin />} label="Address" placeholder="Full Address" name="address" value={formData.address} onChange={handleChange} />
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} key="admin-1" style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                      <Input icon={<MapPin />} label="Address" placeholder="123 Rescue St, Mumbai" name="address" value={formData.address} onChange={handleChange} isMobile={isMobile}/>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} key="admin-2" style={{ gridColumn: "span 2" }}>
-                      <div className="input-group">
-                        <label className="input-label" style={{ fontSize: "0.75rem" }}>Map (PDF File)</label>
-                        <div className="input-field-wrapper">
-                          <div className="input-icon"><FileText size={16} /></div>
-                          <input type="file" accept="application/pdf" className="input-field file-input" style={{ fontSize: "0.8rem" }} />
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} key="admin-2" style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
+                      <div style={{ textAlign: "left" }}>
+                        <label style={{ fontSize: "11px", fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", marginBottom: "8px", display: "block" }}>Map (PDF File)</label>
+                        <div style={{ position: "relative" }}>
+                          <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#e63946" }}><FileText size={18} /></div>
+                          <input type="file" accept="application/pdf" style={{ width: "100%", height: "48px", paddingLeft: "2.8rem", paddingTop: "12px", borderRadius: "14px", border: "1.5px solid #f1f5f9", background: "#f8fafc", fontSize: "12px" }} />
                         </div>
                       </div>
                     </motion.div>
@@ -179,27 +474,38 @@ export default function SignUpPage() {
                 )}
               </AnimatePresence>
 
-              <Input icon={<Lock />} label="Password" type="password" placeholder="••••••••" name="password" value={formData.password} onChange={handleChange} />
-              <Input icon={<Lock />} label="Confirm Password" type="password" placeholder="••••••••" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
+              <Input icon={<Lock />} label="Password" type="password" placeholder="••••••••" name="password" value={formData.password} onChange={handleChange} isMobile={isMobile}/>
+              <Input icon={<Lock />} label="Confirm Password" type="password" placeholder="••••••••" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} isMobile={isMobile}/>
             </div>
             
-            <div style={{ marginTop: "1.5rem" }}>
-              <button 
-      onClick={handleRegister} 
-      className="btn-submit" 
-      disabled={loading}
-      style={{ width: "100%", padding: "12px", borderRadius: "10px" }}
-    >
-      {loading ? "Registering..." : t("signup.registerAs", { role: roleLabel })} 
-      <ArrowRight size={18} />
-    </button>
-                {/* <button className="btn-submit" style={{ width: "100%", padding: "12px", borderRadius: "10px" }}>
-                {t("signup.registerAs", { role: roleLabel })} <ArrowRight size={18} />
-                </button> */}
+            <div style={{ marginTop: "2rem" }}>
+              <motion.button 
+                whileTap={{ scale: 0.98 }}
+                onClick={handleRegister} 
+                disabled={loading}
+                style={{ 
+                  width: "100%", height: "54px", borderRadius: "16px", 
+                  background: "#1e293b", color: "white", fontSize: "14px", fontWeight: 900,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+                  border: "none", cursor: "pointer", opacity: loading ? 0.7 : 1,
+                  boxShadow: "0 10px 15px -3px rgba(30, 41, 59, 0.2)"
+                }}
+              >
+                {loading ? "Registering..." : t("signup.registerAs", { role: roleLabel })} 
+                <ArrowRight size={18} />
+              </motion.button>
                 
-                <footer className="form-footer" style={{ marginTop: "1rem", textAlign: "center" }}>
-                {t("signup.alreadyMember")} <button onClick={() => navigate("/login")} className="toggle-btn" style={{ color: "#e63946", background: "none", border: "none", cursor: "pointer", fontWeight: "bold" }}>{t("signup.logIn")}</button>
-                </footer>
+              <footer style={{ marginTop: "1.5rem", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", color: "#64748b", fontWeight: "bold" }}>
+                  {t("signup.alreadyMember")}
+                  <button 
+                    onClick={() => navigate("/login")} 
+                    style={{ marginLeft: "6px", color: "#e63946", fontWeight: 900, background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    {t("signup.logIn")}
+                  </button>
+                </p>
+              </footer>
             </div>
           </div>
         </motion.div>
@@ -208,37 +514,37 @@ export default function SignUpPage() {
   );
 }
 
-// function Input({ icon, label, type = "text", placeholder }) {
-//   return (
-//     <div className="input-group" style={{ marginBottom: "0" }}>
-//       <label className="input-label" style={{ fontSize: "0.7rem", marginBottom: "4px", display: "block" }}>{label}</label>
-//       <div className="input-field-wrapper">
-//         <div className="input-icon" style={{ left: "10px" }}>{React.cloneElement(icon, { size: 16 })}</div>
-//         <input type={type} placeholder={placeholder} className="input-field" style={{ height: "40px", padding: "8px 10px 8px 35px", fontSize: "0.9rem" }} />
-//       </div>
-//     </div>
-//   );
-// }
-
-function Input({ icon, label, type = "text", placeholder, name, value, onChange }: any) {
+function Input({ icon, label, type = "text", placeholder, name, value, onChange, isMobile }: any) {
   return (
-    <div className="input-group">
-      <label className="input-label">{label}</label>
-      <div className="input-field-wrapper">
-        <div className="input-icon">
+    <div style={{ textAlign: "left" }}>
+      <label style={{ fontSize: "11px", fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", marginBottom: "6px", display: "block", marginLeft: "2px" }}>
+        {label}
+      </label>
+      <div style={{ position: "relative" }}>
+        <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", zIndex: 2 }}>
           {React.cloneElement(icon, { size: 16 })}
         </div>
         <input 
-          name={name}      // Important!
-          value={value}    // Important!
-          onChange={onChange} // Important!
+          name={name}
+          value={value}
+          onChange={onChange}
           type={type} 
           placeholder={placeholder} 
-          className="input-field" 
+          style={{ 
+            width: "100%", 
+            height: isMobile ? "44px" : "48px", 
+            paddingLeft: "2.8rem", 
+            borderRadius: "14px", 
+            border: "1.5px solid #f1f5f9", 
+            fontSize: "14px", 
+            fontWeight: "600", 
+            color: "#334155",
+            background: "#f8fafc", 
+            outline: "none",
+            transition: "border-color 0.2s"
+          }} 
         />
       </div>
     </div>
   );
 }
-
-
