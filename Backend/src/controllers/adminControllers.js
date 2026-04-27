@@ -29,3 +29,26 @@ exports.clearEmergency = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// Backend/src/controllers/adminControllers.js
+
+exports.assignTask = async (req, res) => {
+  const { staffId, floor, sector, taskType } = req.body;
+  try {
+    const db = admin.firestore();
+    // Staff ke document mein assignment update karein
+    await db.collection("users").doc(staffId).update({
+      currentAssignment: {
+        floor,
+        sector,
+        taskType,
+        assignedAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: "active"
+      }
+    });
+    res.status(200).json({ message: "Task assigned successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+

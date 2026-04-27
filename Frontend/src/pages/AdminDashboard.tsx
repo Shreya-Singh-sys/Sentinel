@@ -242,7 +242,8 @@ import {
   BriefcaseBusiness, Megaphone, Bell, CheckCircle2,
   Radio, Clock, Map as MapIcon, ShieldAlert, Sparkles, 
   Share2, MessageSquare, Globe, Siren, ChevronRight,
-  Info
+  Info,
+  Send
 } from "lucide-react";
 // import { db } from "../config/firebase";
 import { doc, updateDoc, setDoc, collection, onSnapshot } from "firebase/firestore";
@@ -253,6 +254,7 @@ import {query, where} from "firebase/firestore";
 import { MoreVertical, X, XCircle, AlertCircle} from 'lucide-react';
 import { Activity, Briefcase} from "lucide-react";  
 import { RefreshCw } from 'lucide-react';
+import { toast } from "sonner";
 // import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 // import { db } from "../config/firebase";
 // import { collection, onSnapshot, doc } from "firebase/firestore";
@@ -569,17 +571,21 @@ useEffect(() => {
 //     alert("Staff member added!");
 //   } catch (e) { console.error(e); }
 // };
-const handleAddMember = async () => {
+const handleAddMember = async (name, role, email) => {
   try {
     await addDoc(collection(db, "users"), {
-      fullName: newMember.fullName,
+      name:name,
       // 'role' login type ke liye 'staff' hi rahega
-      role: 'staff', 
+      role: role, 
+      email:email,
+      roleType:"staff",
       // 'jobTitle' mein woh value jayegi jo aapne dropdown se pick ki hai
       jobTitle: newMember.jobTitle, 
       phone: newMember.phone,
       status: 'on-duty',
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      currentAssignment: { floor: "-", sector: "-", taskType: "Waiting..." },
+    isVerified: false
     });
     setIsAddModalOpen(false);
     // Reset state
@@ -610,6 +616,40 @@ useEffect(() => {
   });
   return () => unsub();
 }, []);
+const assignTaskToStaff = async (staffId, staffName) => {
+  // Hackathon ke liye simple prompt use kar sakte hain, ya ek modal bana sakte hain
+  const floor = prompt("Enter Floor Number (e.g., 4):");
+  const sector = prompt("Enter Sector (e.g., Sector-C):");
+  const task = prompt("Enter Task Description (e.g., Check Fire Exit):");
+
+  if (!floor || !sector) return;
+
+  try {
+    const staffRef = doc(db, "users", staffId);
+    await updateDoc(staffRef, {
+      currentAssignment: {
+        floor: floor,
+        sector: sector,
+        taskType: task || "Emergency Response",
+        status: "active",
+        assignedAt: serverTimestamp()
+      }
+    });
+    
+    // Activity log mein bhi entry daal dete hain taaki sabko pata chale
+    await addDoc(collection(db, "activity_log"), {
+      msg: `Task assigned to Staff: Floor ${floor} [${sector}]`,
+      type: "info",
+      label: "System Dispatch",
+      timestamp: serverTimestamp()
+    });
+
+    toast.success("Task assigned successfully!");
+  } catch (error) {
+    console.error("Assignment Error:", error);
+    toast.error("Failed to assign task.");
+  }
+};
 
 // 2. Add Contact Function
 const handleAddContact = async () => {
@@ -1170,7 +1210,7 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
 
       <div className="flex gap-3 mt-8">
         <button onClick={() => setIsAddModalOpen(false)} className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition-all">Cancel</button>
-        <button onClick={handleAddMember} className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-200 active:scale-95 transition-all">SAVE MEMBER</button>
+        <button onClick={() => handleAddMember(newMember.fullName, newMember.jobTitle, newMember.phone)} className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-200 active:scale-95 transition-all">SAVE MEMBER</button>
       </div>
     </motion.div>
   </div>
@@ -1225,9 +1265,17 @@ const themeClass = getTheme(s.jobTitle);
           }`}>
             {s.status}
           </div>
+          <button 
+      onClick={() => assignTaskToStaff(s.id, s.fullName)} // Task assignment function
+      className="h-8 w-8 bg-slate-900 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-all shadow-lg active:scale-95"
+      title="Assign Task"
+    >
+      <Send size={14} />
+    </button>
           
           {/* Action Menu (Three Dots) */}
           <div className="relative group/menu">
+          
             <button className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-50 text-slate-300 hover:text-slate-600 transition-colors">
                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
             </button>
