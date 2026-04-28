@@ -241,7 +241,7 @@ export default function SignUpPage() {
                 disabled={loading}
                 style={{ 
                   width: "100%", height: "54px", borderRadius: "16px", 
-                  background: "#1e293b", color: "white", fontSize: "14px", fontWeight: 900,
+                  background: "linear-gradient(135deg, #e63946 0%, #f59e0b 100%)", color: "white", fontSize: "14px", fontWeight: 900,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
                   border: "none", cursor: "pointer", opacity: loading ? 0.7 : 1,
                   boxShadow: "0 10px 15px -3px rgba(30, 41, 59, 0.2)"
