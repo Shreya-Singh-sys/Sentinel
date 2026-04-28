@@ -235,7 +235,10 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       const idTokenResult = await user.getIdTokenResult();
-      const userRole = idTokenResult.claims.role || role; 
+      const userRole = idTokenResult.claims.role || role;
+      
+      // Store role in localStorage for BottomNav and other components
+      localStorage.setItem("userRole", userRole);
 
       if (userRole === "admin") navigate("/admin-dashboard");
       else if (userRole === "staff") navigate("/staff-dashboard");
@@ -363,7 +366,7 @@ export default function LoginPage() {
                 onClick={handleLogin}
                 style={{ 
                   marginTop: "1rem", height: "56px", borderRadius: "18px", 
-                  background: "#1e293b", color: "white", fontSize: "14px", fontWeight: 900,
+                  background: "linear-gradient(135deg, #e63946 0%, #f59e0b 100%)", color: "white", fontSize: "14px", fontWeight: 900,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
                   border: "none", cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(30, 41, 59, 0.2)"
                 }}
