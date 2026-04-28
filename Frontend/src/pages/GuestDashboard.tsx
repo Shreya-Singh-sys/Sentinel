@@ -6,6 +6,8 @@ import { BottomNav } from "../components/BottomNav";
 import { Header } from "../components/Header";
 import { db, auth } from "../config/firebase";
 import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, getDocs, getDoc } from "firebase/firestore";
+import {toast} from "sonner";
+import { AlertTriangle } from "lucide-react";
 
 // --- DATA (UNCHANGED) ---
 const safetyContent = {
@@ -90,6 +92,7 @@ const GuestDashboard = () => {
   const [isSafe, setIsSafe] = useState(false);
   const [showSOSTriage, setShowSOSTriage] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const [evacuationInfo, setEvacuationInfo] = useState({
   exit: "Calculating...",
   distance: "--",
@@ -201,13 +204,67 @@ useEffect(() => {
     // Logic to update Firebase would go here
     // await updateDoc(doc(db, "users", "alex_carter"), { status: "safe" });
   };
+  useEffect(() => {
+  if (!db) return;
+
+  const unsubStatus = onSnapshot(doc(db, "system", "status"), (snapshot) => {
+    if (snapshot.exists()) {
+      const statusData = snapshot.data();
+      
+      // Agar purani state false thi aur ab true hui hai
+      if (statusData.isEmergency && !isEmergencyActive) {
+        // 1. Browser Toast Alert
+        toast.error("🚨 EMERGENCY MODE ACTIVATED!", {
+          description: "Follow evacuation protocols and check priority list.",
+          duration: Infinity, // Jab tak staff cancel na kare
+          action: {
+            label: "ACKNOWLEDGE",
+            onClick: () => console.log("Staff Acknowledged"),
+          },
+        });
+
+        // 2. Audio Alert (Optional but useful for Hackathons)
+        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/emergency_it_is_an_emergency.ogg");
+        audio.play().catch(e => console.log("Audio play blocked by browser"));
+
+        // 3. Vibration
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate([500, 200, 500]);
+        }
+      }
+      setIsEmergencyActive(statusData.isEmergency);
+    }
+  });
+
+  return () => unsubStatus();
+}, [isEmergencyActive]); // Dependency array mein isEmergencyActive rakhein
   
 
   return (
-    <div className="relative min-h-screen bg-red-100 pb-28 font-sans overflow-x-hidden">
+    // <div className="relative min-h-screen bg-red-100 pb-28 font-sans overflow-x-hidden">
+    <div className={`relative min-h-screen transition-colors duration-700 overflow-x-hidden font-sans antialiased text-slate-900 pb-40 ${
+          isEmergencyActive ? 'bg-red-200' : 'bg-red-100'
+        }`}>
+              {isEmergencyActive && (
+        <motion.div 
+  initial={{ y: -20, opacity: 0 }} 
+  animate={{ y: 0, opacity: 1 }}
+  className="fixed top-[85px] left-1/3 max-w-max bg-red-600/95 backdrop-blur-md text-white px-5 py-2 rounded-full z-[60] flex items-center gap-3 shadow-[0_10px_25px_rgba(220,38,38,0.3)] border border-white/10"
+>
+  <div className="flex items-center gap-2">
+    <div className="animate-pulse flex items-center">
+      <AlertTriangle size={16} className="text-white" />
+    </div>
+    <span className="font-bold text-[10px] uppercase tracking-[0.12em] whitespace-nowrap">
+      Critical: Evacuation in Progress
+    </span>
+  </div>
+</motion.div>
+      )}
       <Header />
       
       <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-white/60 to-transparent pointer-events-none" />
+      
       
       <div className="relative mx-auto max-w-2xl px-5 pt-28">
         {announcement && (

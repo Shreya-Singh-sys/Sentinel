@@ -374,6 +374,7 @@ const [alertOn, setAlertOn] = useState(false);
   });
   const [quickMsg, setQuickMsg] = useState("");
   const [logs, setLogs] = useState([]);
+  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
 
   // 2. Stats array ko render function ke andar rakhein taaki update ho sake
   const stats = [
@@ -508,15 +509,99 @@ useEffect(() => {
 
   return () => unsubLogs();
 }, []);
+// useEffect(() => {
+//   if (!db) return;
+
+//   // Global system status ko listen karein
+//   const unsubStatus = onSnapshot(doc(db, "system", "status"), (snapshot) => {
+//     if (snapshot.exists()) {
+//       const statusData = snapshot.data();
+//       setIsEmergencyActive(statusData.isEmergency);
+      
+//       // Agar emergency active hui toh ek "Critical Toast" dikhayein
+//       if (statusData.isEmergency) {
+//         toast.error("CRITICAL: Emergency Mode Activated by Command Center!", {
+//           duration: 10000, // 10 seconds tak dikhega
+//           style: { background: '#dc2626', color: '#fff', fontWeight: 'bold' }
+//         });
+        
+//         // Browser Notification ya Vibration trigger kar sakte hain (Optional)
+//         if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+//       }
+//     }
+//   });
+
+//   return () => unsubStatus();
+// }, []);
+
+useEffect(() => {
+  if (!db) return;
+
+  const unsubStatus = onSnapshot(doc(db, "system", "status"), (snapshot) => {
+    if (snapshot.exists()) {
+      const statusData = snapshot.data();
+      
+      // Agar purani state false thi aur ab true hui hai
+      if (statusData.isEmergency && !isEmergencyActive) {
+        // 1. Browser Toast Alert
+        toast.error("🚨 EMERGENCY MODE ACTIVATED!", {
+          description: "Follow evacuation protocols and check priority list.",
+          duration: Infinity, // Jab tak staff cancel na kare
+          action: {
+            label: "ACKNOWLEDGE",
+            onClick: () => console.log("Staff Acknowledged"),
+          },
+        });
+
+        // 2. Audio Alert (Optional but useful for Hackathons)
+        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/emergency_it_is_an_emergency.ogg");
+        audio.play().catch(e => console.log("Audio play blocked by browser"));
+
+        // 3. Vibration
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate([500, 200, 500]);
+        }
+      }
+      setIsEmergencyActive(statusData.isEmergency);
+    }
+  });
+
+  return () => unsubStatus();
+}, [isEmergencyActive]); // Dependency array mein isEmergencyActive rakhein
 
 
   return (
-    <div className="relative min-h-screen bg-red-100 overflow-x-hidden font-sans antialiased text-slate-900 pb-40">
+    // <div className="relative min-h-screen bg-red-100 overflow-x-hidden font-sans antialiased text-slate-900 pb-40">
+    
+  <div className={`relative min-h-screen transition-colors duration-700 overflow-x-hidden font-sans antialiased text-slate-900 pb-40 ${
+    isEmergencyActive ? 'bg-red-200' : 'bg-red-100'
+  }`}>
+        {isEmergencyActive && (
+  <motion.div 
+    initial={{ y: -100, opacity: 0 }} 
+    animate={{ y: 0, opacity: 1 }}
+    // "max-w-max" aur "rounded-full" se ye ek compact capsule ban jayega
+    className="fixed top-20 left-7 -translate-x-1/2 max-w-[90%] bg-red-600/95 backdrop-blur-md text-white px-6 py-2.5 rounded-full z-[60] flex items-center justify-center gap-3 shadow-[0_10px_30px_rgba(220,38,38,0.4)] border border-white/20"
+  >
+    <div className="flex items-center gap-2">
+      <div className="animate-pulse flex items-center">
+        <AlertTriangle size={18} className="text-white" />
+      </div>
+      <span className="font-bold text-[10px] sm:text-xs uppercase tracking-[0.15em] whitespace-nowrap">
+        Critical: Evacuation in Progress
+      </span>
+    </div>
+</motion.div>
+)}
+    
+    {/* 2. Blinking Emergency Bar (Ise Header se theek upar add karein) */}
+  
       
       {/* 1. Glass Header Overlay */}
       <nav className="fixed top-0 left-0 right-0 h-20 bg-white/60 backdrop-blur-xl border-b border-white z-50 shadow-lg shadow-red-900/5">
          <Header />
       </nav>
+
 
       <main className="relative mx-auto max-w-[1400px] px-6 pt-32 lg:px-10 flex flex-col gap-6">
         
@@ -547,6 +632,7 @@ useEffect(() => {
             {isStaffActive ? "STATUS: ACTIVE" : "STATUS: ON-BREAK"}
           </button>
         </div>
+        
 
         {/* 3. Emergency Alerts */}
         {broadcast && (

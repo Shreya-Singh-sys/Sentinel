@@ -1,8 +1,19 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { Icon } from "../components/Icon";
 import { BottomNav } from "../components/BottomNav";
 import { useI18n } from "../i18n/I18nProvider";
+import { auth, db } from "../config/firebase"; // Aapka path alag ho sakta hai
+import { collection, query, orderBy, onSnapshot, updateDoc, serverTimestamp, doc } from "firebase/firestore";
+import { toast } from "sonner";
+interface Alert {
+  id: string;
+  type: string;
+  message: string;
+  timestamp?: any;
+  // agar koi aur fields hain toh wo bhi yahan likh sakte hain
+}
+
 
 const layers = [
   { icon: "exit_to_app", labelKey: "safetymap.layer.exits", count: 6, color: "text-secondary bg-secondary/15" },
@@ -21,19 +32,112 @@ const rooms: Room[] = [
   { id: "gym", x: 170, y: 210, w: 120, h: 160, name: "Gym" },
 ];
 
-// Corridors (id, svg path, length-ish label)
-const corridors = [
-  { id: "c-north", d: "M 30 200 L 290 200", label: "North corridor" },
-  { id: "c-mid", d: "M 160 30 L 160 370", label: "Central corridor" },
-];
+// Use this inside useEffect when a new alert is detected
 
 const SafetyMap = () => {
   const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>("402");
   // Mock: admin marked north corridor blocked
-  const [blocked] = useState<string[]>(["c-north"]);
-
   const selRoom = rooms.find((r) => r.id === selected);
+  const [blocked, setBlocked] = useState<string[]>([]);
+const [lastAlertId, setLastAlertId] = useState<string | null>(null);
+const [activeLayer, setActiveLayer] = useState<string | null>(null);
+
+
+// Corridors (id, svg path, length-ish label)
+const corridors = [
+  { id: "c-north", d: "M 30 200 L 290 200", label: "North corridor" },
+  { id: "c-mid", d: "M 160 30 L 160 370", label: "Central corridor" },
+];
+const [alerts, setAlerts] = useState<Alert[]>([]);
+// useEffect(() => {
+//   // 'alerts' collection ko real-time listen karein
+//   const q = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+//   const unsub = onSnapshot(q, (snapshot) => {
+//     const alertsData = snapshot.docs.map(doc => ({
+//       id: doc.id,
+//       ...doc.data()
+//     } as Alert));
+//     setAlerts(alertsData);
+//   });
+//   return () => unsub();
+// }, []);
+
+const speak = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Purani voice roko
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.rate = 0.9; // Thoda slow aur clear
+      window.speechSynthesis.speak(msg);
+    }
+  };
+// Use this inside useEffect when a new alert is detected
+
+// useEffect(() => {
+//     const q = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+//     const unsub = onSnapshot(q, (snapshot) => {
+//       const alertsData = snapshot.docs.map(doc => ({
+//         id: doc.id,
+//         ...doc.data()
+//       } as Alert));
+//       setAlerts(alertsData);
+
+//       // Agar naya critical alert aaya hai, toh usey bolo
+//       if (alertsData.length > 0 && alertsData[0].id !== lastAlertId) {
+//         if (alertsData[0].type === "critical") {
+//           speak(`Attention! ${alertsData[0].message}`);
+//         }
+//         setLastAlertId(alertsData[0].id);
+//       }
+//     });
+//     return () => unsub();
+//   }, [lastAlertId]);
+
+  useEffect(() => {
+  const unsub = onSnapshot(collection(db, "building_map"), (snapshot) => {
+    // Check karein kaunse corridors blocked hain
+    const blockedIds = snapshot.docs
+      .filter(doc => doc.data().status === "blocked")
+      .map(doc => doc.id);
+    setBlocked(blockedIds);
+  });
+  return () => unsub();
+}, []);
+
+// Dono purane alerts wale useEffect delete karke ye ek rakhiye:
+useEffect(() => {
+    const q = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const alertsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Alert));
+      
+      setAlerts(alertsData);
+
+      // Voice logic
+      if (alertsData.length > 0 && alertsData[0].id !== lastAlertId) {
+        if (alertsData[0].type === "critical") {
+          speak(`Attention! ${alertsData[0].message}`);
+        }
+        setLastAlertId(alertsData[0].id);
+      }
+    });
+    return () => unsub();
+}, [lastAlertId]); // Sirf lastAlertId change hone par check karega
+
+const handleConfirmLocation = async () => {
+  if (!selected) return;
+  const user = auth.currentUser;
+  if (user) {
+    await updateDoc(doc(db, "users", user.uid), {
+      roomNumber: selected,
+      lastUpdated: serverTimestamp()
+    });
+    toast.success("Location confirmed!"); // Staff dashboard par turant dikhega
+  }
+};
+
 
   return (
     <div className="relative min-h-screen bg-background pb-28">
@@ -48,7 +152,18 @@ const SafetyMap = () => {
             {t("safetymap.pathBlocked", { count: blocked.length })}
           </div>
         </motion.header>
-
+        {/* Map container ke theek upar ye add karein */}
+{alerts.length > 0 && (
+  <motion.div 
+    initial={{ height: 0 }} animate={{ height: 'auto' }}
+    className={`mb-4 overflow-hidden rounded-2xl p-4 ${alerts[0].type === 'critical' ? 'bg-red-500 text-white' : 'bg-amber-100 text-amber-900'}`}
+  >
+    <div className="flex items-center gap-3">
+      <Icon name={alerts[0].type === 'critical' ? 'emergency' : 'warning'} filled />
+      <p className="text-sm font-black">{alerts[0].message}</p>
+    </div>
+  </motion.div>
+)}
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -123,7 +238,7 @@ const SafetyMap = () => {
             })}
 
             {/* Safety markers */}
-            <g>
+            {/* <g>
               <circle cx="60" cy="60" r="11" fill="hsl(var(--secondary))" />
               <text x="60" y="63" textAnchor="middle" fill="white" fontSize="8" fontWeight="800">{t("safetymap.exit")}</text>
               <circle cx="270" cy="60" r="11" fill="hsl(var(--secondary))" />
@@ -134,7 +249,43 @@ const SafetyMap = () => {
               <circle cx="100" cy="320" r="8" fill="hsl(var(--warning))" />
               <circle cx="60" cy="370" r="11" fill="hsl(var(--secondary))" />
               <text x="60" y="373" textAnchor="middle" fill="white" fontSize="8" fontWeight="800">{t("safetymap.exit")}</text>
-            </g>
+
+            </g> */}
+            {/* Safety markers inside SVG */}
+<g>
+  {/* EXITS: Dikhayein agar Exit layer active ho ya koi layer select na ho */}
+  {(activeLayer === "exit_to_app" || !activeLayer) && (
+    <g>
+      <circle cx="60" cy="60" r="11" fill="hsl(var(--secondary))" />
+      <text x="60" y="63" textAnchor="middle" fill="white" fontSize="8" fontWeight="800">EXIT</text>
+      <circle cx="270" cy="60" r="11" fill="hsl(var(--secondary))" />
+      <text x="270" y="63" textAnchor="middle" fill="white" fontSize="8" fontWeight="800">EXIT</text>
+    </g>
+  )}
+
+  {/* EXTINGUISHERS: Sirf tab dikhayein jab Fire Extinguisher layer active ho */}
+  {(activeLayer === "fire_extinguisher" || !activeLayer) && (
+    <>
+      <circle cx="100" cy="170" r="8" fill="hsl(var(--primary))" className="animate-pulse" />
+      <circle cx="220" cy="120" r="8" fill="hsl(var(--primary))" className="animate-pulse" />
+    </>
+  )}
+
+  {/* FIRST AID: Sirf tab dikhayein jab Medical layer active ho */}
+  {(activeLayer === "medical_services" || !activeLayer) && (
+    <>
+      <circle cx="220" cy="280" r="8" fill="hsl(var(--warning))" />
+      <circle cx="100" cy="320" r="8" fill="hsl(var(--warning))" />
+    </>
+  )}
+</g>
+            {/* Safety markers inside SVG */}
+{/* {(activeLayer === "exit_to_app" || !activeLayer) && (
+  <g>
+    <circle cx="60" cy="60" r="11" fill="hsl(var(--secondary))" />
+    <text x="60" y="63" textAnchor="middle" fill="white" fontSize="8" fontWeight="800">EXIT</text>
+  </g>
+)} */}
 
             {/* "I am here" pin */}
             {selRoom && (
@@ -193,11 +344,15 @@ const SafetyMap = () => {
         <div className="mt-4 grid grid-cols-2 gap-3">
           {layers.map((l, i) => (
             <motion.button
+              onClick={() => setActiveLayer(activeLayer === l.icon ? null : l.icon)}
+  className={`flex items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-card transition-all ${
+    activeLayer === l.icon ? 'ring-2 ring-primary bg-primary/5 scale-[1.02]' : 'opacity-80'
+  }`}
               key={l.labelKey}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + i * 0.05 }}
-              className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-card"
+              // className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-card"
             >
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${l.color}`}>
                 <Icon name={l.icon} filled />

@@ -5,13 +5,14 @@ interface IconProps {
   className?: string;
   filled?: boolean;
   weight?: 300 | 400 | 500 | 600 | 700;
+  size?: number;
 }
 
-export const Icon = ({ name, className = "", filled = false, weight = 500 }: IconProps) => (
+export const Icon = ({ name, className = "", filled = false, weight = 500, size = 24 }: IconProps) => (
   <span
     className={`material-symbols-rounded select-none ${className}`}
     style={{
-      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' ${weight}, 'GRAD' 0, 'opsz' 24`,
+      fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' ${weight}, 'GRAD' 0, 'opsz' ${size}`,
     }}
   >
     {name}
