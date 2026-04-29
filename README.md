@@ -48,4 +48,4 @@ Sentinel AI is directly aligned with:
 ## 🛠️ Installation & Setup
 1. **Clone the repo:**
    ```bash
-   git clone [https://github.com/shreyasingh/sentinel-ai.git](https://github.com/shreyasingh/sentinel-ai.git)
+   git clone https://github.com/Shreya-Singh-sys/Sentinel.git
