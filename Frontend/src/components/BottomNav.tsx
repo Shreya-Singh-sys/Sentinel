@@ -2,14 +2,29 @@ import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Icon } from "./Icon";
 import { useI18n } from "../i18n/I18nProvider";
+import { useState, useEffect } from "react";
 
 export const BottomNav = () => {
   const location = useLocation();
   const { t } = useI18n();
+  const [userRole, setUserRole] = useState<string>("guest");
   
-  // 1. Dynamic Role Detection
-  const rawUserRole = localStorage.getItem("userRole") || "guest";
-  const userRole = rawUserRole.toLowerCase() === "owner" ? "admin" : rawUserRole.toLowerCase();
+  // Update role when localStorage changes or component mounts
+  useEffect(() => {
+    const rawUserRole = localStorage.getItem("userRole") || "guest";
+    const role = rawUserRole.toLowerCase() === "owner" ? "admin" : rawUserRole.toLowerCase();
+    setUserRole(role);
+
+    // Listen for storage changes (when logged in on another tab, etc.)
+    const handleStorageChange = () => {
+      const newRole = localStorage.getItem("userRole") || "guest";
+      const updatedRole = newRole.toLowerCase() === "owner" ? "admin" : newRole.toLowerCase();
+      setUserRole(updatedRole);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const items = [
     { to: "/", icon: "home", label: t("nav.home") },
@@ -36,7 +51,11 @@ export const BottomNav = () => {
           : "/guest-dashboard",
 
       icon: "dashboard", 
-      label: t(`role.${userRole}`),
+      label: userRole === "admin" 
+          ? "Admin"
+          : userRole === "staff"
+          ? "Staff"
+          : "Guest",
       isAuthority: userRole === "staff" || userRole === "admin" 
     },
   ];
@@ -99,3 +118,5 @@ export const BottomNav = () => {
     </motion.nav>
   );
 };
+
+

@@ -37,7 +37,7 @@ export const Header = () => {
             <span className="relative h-2 w-2 rounded-full bg-green-600"></span>
           </span>
           <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
-            {t("header.liveHotel", { hotel: "The Marlowe Grand" })}
+            {t("header.liveHotel" , { count: 1 } )}
           </span>
         </div>
 
@@ -73,9 +73,9 @@ export const Header = () => {
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-[11px] font-black text-white shadow-sm ring-2 ring-red-100">
               SC
             </div>
-            <span className="hidden text-[11px] font-black text-slate-900 uppercase lg:block tracking-wider">
+            {/* <span className="hidden text-[11px] font-black text-slate-900 uppercase lg:block tracking-wider">
               {roleLabel}
-            </span>
+            </span> */}
           </div>
         </div>
 
