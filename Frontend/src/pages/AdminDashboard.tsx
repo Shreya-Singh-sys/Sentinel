@@ -255,6 +255,7 @@ import { MoreVertical, X, XCircle, AlertCircle} from 'lucide-react';
 import { Activity, Briefcase} from "lucide-react";  
 import { RefreshCw } from 'lucide-react';
 import { toast } from "sonner";
+import {orderBy, limit} from "firebase/firestore";
 // import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 // import { db } from "../config/firebase";
 // import { collection, onSnapshot, doc } from "firebase/firestore";
@@ -744,8 +745,68 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
     console.error("Error logging activity:", e);
   }
 };
+// useEffect(() => {
+//   // Agar koi naya log aaya hai aur uska type 'danger' hai
+//   if (logs.length > 0 && logs[0].type === 'danger') {
+    
+//     // 1. Alert Sound play karein (Siren)
+//     const audio = new Audio("https://actions.google.com/sounds/v1/alarms/emergency_it_is_an_emergency.ogg");
+//     audio.play().catch(e => console.log("Audio play blocked by browser. Click anywhere on page first."));
 
+//     // 2. Screen par bada alert dikhayein
+//     toast.error(`SOS ALERT: ${logs[0].msg}`, {
+//       duration: 10000, // 10 seconds tak dikhega
+//       position: "top-center",
+//       style: { background: '#ef4444', color: '#fff', fontWeight: '900' }
+//     });
+//   }
+// }, [logs]); // Jab bhi logs array update ho, ye check karega
 
+useEffect(() => {
+  if (!db) return;
+
+  // 1. Query: activity_log se latest records fetch karein
+  const q = query(
+    collection(db, "activity_log"),
+    orderBy("timestamp", "desc"),
+    limit(5) // Sirf top 5 check karein
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      // 2. Sirf 'added' (naye) records par kaam karein
+      if (change.type === "added") {
+        const newLog = change.doc.data();
+        
+        // 3. Time check: Agar log pichle 10 seconds mein generate hua hai
+        const logTime = newLog.timestamp?.toMillis() || 0;
+        const now = Date.now();
+        const isRecent = (now - logTime) < 10000; 
+
+        if (newLog.type === "danger" && isRecent) {
+          console.log("SOS Received:", newLog.msg); // Debugging ke liye
+
+          // 🚨 SIREN & TOAST TRIGGER
+          toast.error(`SOS ALERT: ${newLog.msg}`, {
+            duration: 10000,
+            position: "top-center",
+            style: { 
+              background: '#ef4444', 
+              color: '#fff', 
+              fontWeight: '900',
+              border: '2px solid white' 
+            }
+          });
+
+          const audio = new Audio("https://actions.google.com/sounds/v1/alarms/emergency_it_is_an_emergency.ogg");
+          audio.play().catch(e => console.log("Audio Blocked: Click on screen first!"));
+        }
+      }
+    });
+  });
+
+  return () => unsubscribe();
+}, []);
 
 // Ise aise use karein:
 // logActivity("Evacuation broadcast sent", "warning", "Broadcast");
@@ -842,11 +903,11 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.div whileHover={{ rotate: 5 }} className="h-9 w-9 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-100">
-              <Shield size={18} fill="currentColor" />
+              <Shield size={16} fill="currentColor" />
             </motion.div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-tighter text-slate-400 leading-none">Sentinel</p>
-              <p className="text-sm font-black text-slate-900">Command Center</p>
+            <div className="flex flex-col">
+              <p className="text-[8px] font-black uppercase tracking-tighter text-slate-400 leading-none">Sentinel</p>
+              <p className="text-[11px] md:text-sm font-black text-slate-900 leading-none mt-0.5">Admin</p>
             </div>
             <div className="ml-4 hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
               <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
@@ -865,7 +926,7 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
             className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wide border border-blue-100 hover:bg-blue-100 transition-all active:scale-95">
               <Radio size={14} strokeWidth={2.5}/> Responder Link
             </button>
-            <motion.button 
+             <motion.button 
   onClick={toggleEmergencyMode}
   whileHover={{ scale: 1.02 }}
   whileTap={{ scale: 0.98 }}
@@ -874,8 +935,9 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
     ? "bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800" // Stop Mode
     : "bg-red-600 text-white shadow-red-200 hover:bg-red-700 animate-pulse" // Active Mode
   }`}
->
-  {isEmergencyActive ? (
+> 
+  {/* < */}
+   {isEmergencyActive ? (
     <>
       <div className="h-2 w-2 bg-red-500 rounded-full animate-ping" />
       Stop Emergency Mode
@@ -885,7 +947,8 @@ const logActivity = async (msg, type, label) => { // 1. Yahan 'label' add kiya
       <Siren size={14}/> Activate Emergency Mode
     </>
   )}
-</motion.button>
+</motion.button>  
+
             
             {/* <motion.button 
               // onClick={() => handleEmergencyToggle(true)}

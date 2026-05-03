@@ -5,9 +5,10 @@ import { Icon } from "../components/Icon";
 import { BottomNav } from "../components/BottomNav";
 import { Header } from "../components/Header";
 import { db, auth } from "../config/firebase";
-import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, getDocs, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, getDocs, getDoc, serverTimestamp } from "firebase/firestore";
 import {toast} from "sonner";
 import { AlertTriangle } from "lucide-react";
+import { setDoc, addDoc} from "firebase/firestore";
 
 // --- DATA (UNCHANGED) ---
 const safetyContent = {
@@ -238,6 +239,35 @@ useEffect(() => {
 
   return () => unsubStatus();
 }, [isEmergencyActive]); // Dependency array mein isEmergencyActive rakhein
+
+
+const handleTrappedClick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    // 1. User ka status update karein (Taaki stats aur dots update hon)
+    await setDoc(doc(db, "users", user.uid), {
+      status: "trapped",
+      lastUpdated: serverTimestamp(),
+      fullName: user.displayName || "Guest User",
+      role: "guest"
+    },{merge: true});
+
+    // 2. Activity Log mein 'danger' type entry daalein (Taaki Admin ko SIREN/Alert mile)
+    await addDoc(collection(db, "activity_log"), {
+      msg: `Guest SOS: ${user.displayName || 'A Guest'} is TRAPPED! Immediate rescue needed in Room 402.`,
+      type: "danger", 
+      label: "SOS ALERT",
+      timestamp: serverTimestamp()
+    });
+
+    toast.error("Emergency responders have been alerted!");
+    setShowSOSTriage(false); // Modal band karein
+  } catch (err) {
+    console.error("SOS failed:", err);
+  }
+};
   
 
   return (
@@ -482,10 +512,8 @@ useEffect(() => {
               
               <div className="flex flex-col gap-4">
                 <button 
-                  onClick={() => {
-                    alert("Admin Notified: Trapped in Room 402");
-                    setShowSOSTriage(false);
-                  }}
+                  onClick={handleTrappedClick
+                  }
                   className="bg-white text-red-600 py-4 rounded-2xl font-black uppercase tracking-widest shadow-2xl active:scale-95"
                 >
                   Yes, I am trapped

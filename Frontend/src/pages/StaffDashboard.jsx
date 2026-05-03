@@ -570,6 +570,8 @@ useEffect(() => {
 }, [isEmergencyActive]); // Dependency array mein isEmergencyActive rakhein
 
 
+
+
   return (
     // <div className="relative min-h-screen bg-red-100 overflow-x-hidden font-sans antialiased text-slate-900 pb-40">
     
