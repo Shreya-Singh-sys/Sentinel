@@ -285,7 +285,7 @@ const cardHover: Variants = {
 // const [stats, setStats] = useState({ total: 0, evacuated: 0, trapped: 0 });
 // const [trappedUsers, setTrappedUsers] = useState(
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({ total: 0, evacuated: 0, trapped: 0, staffActive: 0 });
+  const [stats, setStats] = useState({ total: 0, evacuated: 0, trapped: 0, staffActive: 0, fullUserList: [] });
   const [trappedUsers, setTrappedUsers] = useState<any[]>([]);
   const [mapUrl, setMapUrl] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("1F");
@@ -306,6 +306,16 @@ const [selectedLog, setSelectedLog] = useState(null);
 const [isEmergencyActive, setIsEmergencyActive] = useState(false);
 const [isEditing, setIsEditing] = useState(false);
 const [selectedZone, setSelectedZone] = useState<string | null>(null);
+const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+const [modalTitle, setModalTitle] = useState("");
+const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  
+  useEffect(() => {
+  localStorage.setItem("userRole", "admin"); // Dashboard khulte hi role save karo
+  // ... aapka baaki code
+}, []);
+
+
   useEffect(() => {
     // Check if db is defined to prevent crash
     if (!db) return;
@@ -327,7 +337,8 @@ const [selectedZone, setSelectedZone] = useState<string | null>(null);
           total: usersList.length,
           evacuated: evacuated.length,
           trapped: trapped.length,
-          staffActive: activeStaff.length
+          staffActive: activeStaff.length,
+          fullUserList: usersList
         });
         setTrappedUsers(trapped);
       } catch (err) {
@@ -718,7 +729,9 @@ useEffect(() => {
 useEffect(() => {
   // Latest 5 logs ko real-time listen karein
   const q = query(
-    collection(db, "activity_log")
+    collection(db, "activity_log"),
+    orderBy("timestamp", "desc"),
+    limit(5)
   );
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -808,6 +821,38 @@ useEffect(() => {
   return () => unsubscribe();
 }, []);
 
+const handleCardClick = (type: string) => {
+  let title = "";
+  let list = [];
+
+  // Firestore se aane wali users list ko filter karein
+  // Note: 'usersList' wahi array hai jo aapke onSnapshot listener mein hai
+  const fullList = (stats as any).fullUserList || []; 
+
+  switch (type) {
+    case 'total':
+      title = "Total Registered Guests";
+      list = fullList;
+      break;
+    case 'safe':
+      title = "Evacuated & Safe Guests";
+      list = fullList.filter((u: any) => u.status === 'safe');
+      break;
+    case 'trapped':
+      title = "Trapped - High Priority Triage";
+      list = fullList.filter((u: any) => u.status === 'trapped');
+      break;
+    case 'staff':
+      title = "Active Staff Members";
+      list = fullList.filter((u: any) => u.role === 'staff');
+      break;
+  }
+
+  setModalTitle(title);
+  setFilteredUsers(list);
+  setIsStatsModalOpen(true);
+};
+
 // Ise aise use karein:
 // logActivity("Evacuation broadcast sent", "warning", "Broadcast");
 // Ise aise use karein:
@@ -896,6 +941,86 @@ useEffect(() => {
     </motion.div>
   </div>
 )}
+
+  {isStatsModalOpen && (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95, y: 30 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 30 }}
+      className="relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] flex flex-col border border-white/40"
+    >
+      {/* Header with Glassy Gradient */}
+      <div className="p-8 border-b border-white/20 flex justify-between items-center bg-white/30">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter drop-shadow-sm">
+            {modalTitle}
+          </h2>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Live Database Records</p>
+          </div>
+        </div>
+        <button 
+          onClick={() => setIsStatsModalOpen(false)} 
+          className="h-12 w-12 rounded-2xl bg-white/50 backdrop-blur-md shadow-inner flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-white transition-all duration-300 border border-white/60 group"
+        >
+          <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+        </button>
+      </div>
+
+      {/* Body with Custom Glass Scrollbar */}
+      <div className="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent to-white/20">
+        {filteredUsers.length > 0 ? filteredUsers.map((user, i) => (
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05 }}
+            key={user.id} 
+            className="group flex items-center justify-between p-4 bg-white/40 hover:bg-white/80 backdrop-blur-sm rounded-[1.5rem] border border-white/60 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200">
+                {user.fullName?.charAt(0) || user.name?.charAt(0) || "?"}
+              </div>
+              <div>
+                <p className="font-black text-slate-800 text-base leading-tight group-hover:text-indigo-600 transition-colors">
+                  {user.fullName || user.name || "Unknown User"}
+                </p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5 flex items-center gap-1">
+                  <span className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-500">Room {user.room || "N/A"}</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Floor {user.floor || "N/A"}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Status Badge with Glass Effect */}
+            <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-sm ${
+              user.status === 'trapped' ? 'bg-red-500/10 text-red-600 border-red-200/50 backdrop-blur-md' : 
+              user.status === 'safe' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50 backdrop-blur-md' : 
+              'bg-blue-500/10 text-blue-600 border-blue-200/50 backdrop-blur-md'
+            }`}>
+              {user.status || user.role}
+            </div>
+          </motion.div>
+        )) : (
+          <div className="text-center py-20 bg-white/20 rounded-[2.5rem] border border-dashed border-slate-300">
+            <div className="text-4xl mb-4">🔍</div>
+            <p className="text-slate-500 font-black text-sm uppercase tracking-widest">No Records Found</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium italic">Try adjusting your filters</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Bottom Glow Overlay */}
+      <div className="h-4 bg-gradient-to-t from-white/40 to-transparent pointer-events-none" />
+    </motion.div>
+  </div>
+)}
           
       
       {/* 1. TOP HEADER */}
@@ -978,7 +1103,8 @@ useEffect(() => {
               key={s.label}
               variants={cardHover}
               whileHover="hover"
-              className={`bg-white p-4 rounded-2xl border-l-4 ${s.border} shadow-sm border border-slate-100 relative cursor-default`}
+              onClick={() => handleCardClick(s.label.toLowerCase().split(" ")[0])}
+              className={`cursor-pointer bg-white p-4 rounded-2xl border-l-4 ${s.border} shadow-sm border border-slate-100 relative cursor-default`}
             >
               <div className="flex justify-between items-start mb-1">
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider leading-none">{s.label}</span>
@@ -992,6 +1118,7 @@ useEffect(() => {
             </motion.div>
           ))}
         </div>
+        
 
         {/* 3. Trapped Guests Peek */}
         <div className="bg-red-50/40 border border-red-100 rounded-2xl p-4 shadow-sm">

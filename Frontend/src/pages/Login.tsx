@@ -236,9 +236,6 @@ export default function LoginPage() {
       const user = userCredential.user;
       const idTokenResult = await user.getIdTokenResult();
       const userRole = idTokenResult.claims.role || role;
-      
-      // Store role in localStorage for BottomNav and other components
-      localStorage.setItem("userRole", userRole);
 
       if (userRole === "admin") navigate("/admin-dashboard");
       else if (userRole === "staff") navigate("/staff-dashboard");

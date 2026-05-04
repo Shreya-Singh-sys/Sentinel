@@ -383,6 +383,12 @@ const [alertOn, setAlertOn] = useState(false);
     { id: 'trapped', labelKey: 'Trapped', value: trappedCount, icon: 'report_problem', col: 'red' },
     { id: 'staff', labelKey: 'Active Staff', value: activeStaff, icon: 'badge', col: 'amber' },
   ];
+  
+  useEffect(() => {
+  localStorage.setItem("userRole", "staff");
+  // ... aapka baaki code
+}, []);
+
 
 useEffect(() => {
   // 1. Total Guests & Trapped Count (Assuming 'users' collection with 'role' and 'status')

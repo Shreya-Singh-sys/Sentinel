@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon";
 import { BottomNav } from "../components/BottomNav";
@@ -9,6 +9,9 @@ import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, g
 import {toast} from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { setDoc, addDoc} from "firebase/firestore";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { s } from "framer-motion/client";
+
 
 // --- DATA (UNCHANGED) ---
 const safetyContent = {
@@ -103,6 +106,8 @@ const [navData, setNavData] = useState({
   path: "M50,400 L50,200 L250,200 L250,50", // Fallback path
   target: "Stairwell B"
 });
+const [showScanner, setShowScanner] = useState(false);
+const scannerInstance = useRef<Html5QrcodeScanner | null>(null);
 
 // useEffect(() => {
 //   const user = auth.currentUser;
@@ -118,6 +123,15 @@ const [navData, setNavData] = useState({
 //   });
 //   return () => unsub();
 // }, []);
+
+useEffect(() => {
+  // ✅ Ye line ensure karegi ki neutral pages par bhi aap 'Guest' hi rahein
+  localStorage.setItem("userRole", "guest"); 
+  
+  if (!localStorage.getItem("userRole")) {
+    localStorage.setItem("userRole", "guest");
+  }
+}, []);
 useEffect(() => {
   const user = auth.currentUser;
   if (!user) return;
@@ -187,8 +201,9 @@ useEffect(() => {
     setScanning(true);
     setTimeout(() => {
       setScanning(false);
-      setCheckedIn(true);
+      // setCheckedIn(true);
     }, 1800);
+    setShowScanner(true);
   };
 
   // 3. Audio Alert Function
@@ -268,7 +283,134 @@ const handleTrappedClick = async () => {
     console.error("SOS failed:", err);
   }
 };
-  
+
+
+
+// useEffect(() => {
+//   let scannerInstance: Html5QrcodeScanner | null = null;
+//     if (showScanner) {
+//       const timer = setTimeout(() => {
+//       scannerInstance = new Html5QrcodeScanner(
+//         "reader", 
+//         { fps: 10, qrbox: { width: 500, height: 500 } }, 
+//         /* verbose= */ false
+//       );
+
+//       scannerInstance.render(onScanSuccess, (err: any) => {});
+//     },100);
+
+//       function onScanSuccess(decodedText: string) {
+//         console.log(`Scan result: ${decodedText}`);
+//         if (scannerInstance) {
+//         scannerInstance.clear().catch(e => console.error(e));
+//       }
+//         setShowScanner(false);
+//         setCheckedIn(true); // Check-in Success!
+//         toast.success("Check-in Successful! Welcome to The Marlowe Grand.");
+//       }
+
+//       // function onScanError(err: any) {
+//       //   // Zyada log nahi karenge kyunki ye har frame par check karta hai
+//       // }
+
+//       return () => {
+//         clearTimeout(timer);
+//         if (scannerInstance) {
+//           scannerInstance.clear().catch(e => console.error("Cleanup error:", e));
+//         }
+//       };
+//     }
+//   }, [showScanner]);
+
+  useEffect(() => {
+  let scannerInstance: Html5QrcodeScanner | null = null;
+
+  if (showScanner) {
+    // Chota sa delay taaki modal ka 'reader' element DOM mein aa jaye
+    const timer = setTimeout(() => {
+      try {
+        scannerInstance = new Html5QrcodeScanner(
+          "reader",
+          { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 }, // Box size thoda chota rakhein mobile ke liye
+            aspectRatio: 1.0 
+          },
+          false
+        );
+
+        scannerInstance.render(
+          (decodedText) => {
+            // ✅ Success Logic
+            console.log("QR Scanned:", decodedText);
+            
+            if (scannerInstance) {
+              scannerInstance.clear().catch(e => console.error(e));
+            }
+            
+            setShowScanner(false);
+            setScanning(false);
+            setCheckedIn(true); // Ab scanning ke baad hi check-in hoga
+            toast.success("Check-in Successful! Safety systems active.");
+          },
+          (errorMessage) => {
+            // Scan errors (har frame pe aate hain) ko ignore karein
+          }
+        );
+      } catch (err) {
+        console.error("Scanner initialization failed:", err);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      if (scannerInstance) {
+        scannerInstance.clear().catch(e => console.error("Cleanup error:", e));
+      }
+    };
+  }
+}, [showScanner]);
+
+async function onScanSuccess(decodedText: string) {
+  try {
+    const data = JSON.parse(decodedText);
+    console.log("Parsed QR Data:", data);
+
+    const user = auth.currentUser;
+    if (user) {
+      // 1. Database (Firestore) mein real data update karein
+      // Jab database update hoga, aapka 'onSnapshot' listener khud UI update kar dega
+      await setDoc(doc(db, "users", user.uid), {
+        name: data.guestName,
+        fullName: data.guestName,
+        floor: data.floor,
+        room: data.room,
+        roomNumber: data.room,
+        venue: data.venue,
+        status: "checked-in",
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+
+      toast.success(`Welcome ${data.guestName}! Room ${data.room} verified.`);
+    }
+
+    // 2. Scanner Cleanup
+    if (scannerInstance.current) {
+      await scannerInstance.current.clear();
+    }
+    setShowScanner(false);
+    setScanning(false);
+    setCheckedIn(true);
+
+  } catch (err) {
+    console.error("QR Processing Error:", err);
+    // Fallback agar JSON invalid ho
+    setCheckedIn(true);
+    setShowScanner(false);
+    toast.error("Format error, but checked you in anyway!");
+  }
+}
+
 
   return (
     // <div className="relative min-h-screen bg-red-100 pb-28 font-sans overflow-x-hidden">
@@ -435,7 +577,80 @@ const handleTrappedClick = async () => {
               ))}
             </motion.div>
           </div>
+          {/* {showScanner && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black flex flex-col items-center justify-center p-6"
+          >
+            <div className="w-full max-w-md bg-white rounded-3xl p-4 overflow-hidden">
+              <h2 className="text-center font-black text-slate-900 mb-4 uppercase tracking-widest">Scanning QR Code</h2>
+              <div id="reader" className="w-full overflow-hidden rounded-2xl"></div> 
+              <button 
+                onClick={() => setShowScanner(false)}
+                className="mt-6 w-full py-4 bg-slate-100 text-slate-900 rounded-2xl font-black text-sm uppercase"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        )}    */}
+        {showScanner && (
+  <motion.div 
+    initial={{ opacity: 0 }} 
+    animate={{ opacity: 1 }} 
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[150] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-6"
+  >
+    <motion.div 
+      initial={{ scale: 0.9, y: 20 }}
+      animate={{ scale: 1, y: 0 }}
+      className="w-full max-w-md bg-white/10 backdrop-blur-2xl rounded-[3rem] p-6 border border-white/20 shadow-2xl relative overflow-hidden"
+    >
+      {/* Background Decorative Glow */}
+      <div className="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="relative">
+        <h2 className="text-center font-black text-white mb-6 uppercase tracking-[0.3em] text-xs">
+          QR Scanner / File Upload
+        </h2>
 
+        {/* Viewfinder Container */}
+        <div className="relative group min-h-[300px]">
+          {/* Scanning Animation Line (Sirf tab dikhe jab camera active ho) */}
+          <motion.div 
+            animate={{ top: ["0%", "100%", "0%"] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-400 to-transparent z-10 shadow-[0_0_15px_rgba(129,140,248,0.8)]"
+          />
+
+          {/* Camera Corner Brackets */}
+          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-indigo-400 rounded-tl-2xl z-20 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-indigo-400 rounded-tr-2xl z-20 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-indigo-400 rounded-bl-2xl z-20 pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-indigo-400 rounded-br-2xl z-20 pointer-events-none" />
+
+          {/* The Actual Scanner + Upload Button Container */}
+          <div 
+            id="reader" 
+            className="w-full overflow-hidden rounded-3xl bg-black/40 border border-white/10 text-white"
+          />
+        </div>
+
+        <p className="text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-6">
+          Scan via Camera or Upload an Image
+        </p>
+
+        {/* Cancel Button */}
+        <button 
+          onClick={() => setShowScanner(false)}
+          className="mt-8 w-full py-4 bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300"
+        >
+          Close Scanner
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
           {!checkedIn && (
             <motion.div className="absolute inset-x-0 -top-10 flex items-start justify-center pt-20 z-20">
               <motion.div 
