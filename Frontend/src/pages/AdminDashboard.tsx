@@ -608,17 +608,42 @@ const handleAddMember = async (name, role, email) => {
     await logActivity(`New Staff member ${newMember.fullName} added to directory.`, "success", "Staff Update");
   } catch (e) { console.error(e); }
 };
+// useEffect(() => {
+//   // Agar aapne 'members' collection banayi hai toh yahan "members" likhein
+//   // Warna "users" collection use karein jaisa niche dikhaya hai
+//   const q = query(collection(db, "users"), where("role", "==", "staff"));
+
+//   const unsubscribe = onSnapshot(q, (snapshot) => {
+//     const membersList = snapshot.docs.map(doc => ({
+//       id: doc.id,
+//       ...doc.data()
+//     }));
+//     console.log("Total Staff Found with roleType:", membersList.length);
+//     setStaffMembers(membersList);
+//   });
+
+//   return () => unsubscribe();
+// }, []);
+
 useEffect(() => {
-  // Agar aapne 'members' collection banayi hai toh yahan "members" likhein
-  // Warna "users" collection use karein jaisa niche dikhaya hai
-  const q = query(collection(db, "users"), where("role", "==", "staff"));
+  // Sabhi users ko listen karein
+  const q = collection(db, "users");
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    const membersList = snapshot.docs.map(doc => ({
+    const allUsers = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
-    setStaffMembers(membersList);
+    })) as any[];
+    console.log("DEBUG - All Users from DB:", allUsers);
+
+    // ✅ Front-end Filter: Role 'staff' ho YA roleType 'staff' ho
+    const filteredStaff = allUsers.filter(user => 
+      user.role?.toLowerCase() === "staff" || 
+      user.roleType?.toLowerCase() === "staff"
+    );
+
+    console.log("Total Staff Found (Unified):", filteredStaff.length);
+    setStaffMembers(filteredStaff);
   });
 
   return () => unsubscribe();
@@ -630,40 +655,7 @@ useEffect(() => {
   });
   return () => unsub();
 }, []);
-const assignTaskToStaff = async (staffId, staffName) => {
-  // Hackathon ke liye simple prompt use kar sakte hain, ya ek modal bana sakte hain
-  const floor = prompt("Enter Floor Number (e.g., 4):");
-  const sector = prompt("Enter Sector (e.g., Sector-C):");
-  const task = prompt("Enter Task Description (e.g., Check Fire Exit):");
 
-  if (!floor || !sector) return;
-
-  try {
-    const staffRef = doc(db, "users", staffId);
-    await updateDoc(staffRef, {
-      currentAssignment: {
-        floor: floor,
-        sector: sector,
-        taskType: task || "Emergency Response",
-        status: "active",
-        assignedAt: serverTimestamp()
-      }
-    });
-    
-    // Activity log mein bhi entry daal dete hain taaki sabko pata chale
-    await addDoc(collection(db, "activity_log"), {
-      msg: `Task assigned to Staff: Floor ${floor} [${sector}]`,
-      type: "info",
-      label: "System Dispatch",
-      timestamp: serverTimestamp()
-    });
-
-    toast.success("Task assigned successfully!");
-  } catch (error) {
-    console.error("Assignment Error:", error);
-    toast.error("Failed to assign task.");
-  }
-};
 
 // 2. Add Contact Function
 const handleAddContact = async () => {
@@ -851,6 +843,31 @@ const handleCardClick = (type: string) => {
   setModalTitle(title);
   setFilteredUsers(list);
   setIsStatsModalOpen(true);
+};
+
+  const assignTaskToStaff = async (staffId: string) => {
+  const floor = prompt("Enter Floor:");
+  const sector = prompt("Enter Sector:");
+  const task = prompt("Enter Task:");
+
+  if (!floor || !sector) return;
+
+  try {
+    // ✅ staffId wahi hona chahiye jo mapping mein s.id se aa raha hai
+    const staffRef = doc(db, "users", staffId); 
+    await updateDoc(staffRef, {
+      currentAssignment: {
+        floor: floor,
+        sector: sector,
+        taskType: task || "Emergency Response",
+        status: "active",
+        assignedAt: serverTimestamp()
+      }
+    });
+    toast.success("Task assigned to Sumit!");
+  } catch (error) {
+    console.error("Assignment Error:", error);
+  }
 };
 
 // Ise aise use karein:
@@ -1416,16 +1433,19 @@ const handleCardClick = (type: string) => {
   {/* Staff List */}
   <div className="space-y-4">
   {staffMembers.map((s) => {
+    const displayName = s.fullName || s.name || "New Member";
+    const displayJob = s.jobTitle || s.role || "Staff";
     // Dynamic color picker based on role
     const getTheme = (job) => {
     //   if (role === 'Security') return "from-orange-400 to-red-500";
     //   if (role === 'Medical') return "from-rose-400 to-pink-600";
     //   if (role === 'Floor Warden') return "from-blue-500 to-indigo-600";
     //   return "from-slate-400 to-slate-600";
-    const title = job?.toLowerCase(); // Case-insensitive check
-    if (title?.includes('security')) return "from-orange-400 to-red-500";
-    if (title?.includes('medical')) return "from-rose-400 to-pink-600";
-    if (title?.includes('warden')) return "from-blue-500 to-indigo-600";
+  // Unified Job Title pick karein
+  // const jobDisplay = s.jobTitle || s.roleType || "Field Staff";
+    if (s.jobTitle?.includes('security')) return "from-orange-400 to-red-500";
+    if (s.jobTitle?.includes('medical')) return "from-rose-400 to-pink-600";
+    if (s.jobTitle?.includes('warden')) return "from-blue-500 to-indigo-600";
     return "from-slate-400 to-slate-600";
     };
 const themeClass = getTheme(s.jobTitle);
@@ -1439,16 +1459,17 @@ const themeClass = getTheme(s.jobTitle);
         <div className="flex items-center gap-5">
           <div className="relative">
             <div className={`h-12 w-12 bg-gradient-to-br ${themeClass} opacity-50 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300`}>
-              {s.fullName?.charAt(0) || "U"}
+              {/* {s.fullName?.charAt(0) || "U"} */}
+              {displayName.charAt(0).toUpperCase()}
             </div>
             <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-4 border-white ${s.status === 'on-duty' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
           </div>
           
           <div>
-            <p className="text-[14px] font-black text-slate-800 tracking-tight">{s.fullName}</p>
+            <p className="text-[14px] font-black text-slate-800 tracking-tight">{displayName}</p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="h-1 w-1 bg-slate-300 rounded-full" />
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{s.jobTitle || "Staff"}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{displayJob}</p>
             </div>
           </div>
         </div>
@@ -1462,7 +1483,8 @@ const themeClass = getTheme(s.jobTitle);
             {s.status}
           </div>
           <button 
-      onClick={() => assignTaskToStaff(s.id, s.fullName)} // Task assignment function
+      onClick={() => assignTaskToStaff(s.id)
+      } // Task assignment function
       className="h-8 w-8 bg-slate-900 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-all shadow-lg active:scale-95"
       title="Assign Task"
     >

@@ -366,6 +366,7 @@ const handleTrappedClick = async () => {
       clearTimeout(timer);
       if (scannerInstance) {
         scannerInstance.clear().catch(e => console.error("Cleanup error:", e));
+        scannerInstance = null;
       }
     };
   }

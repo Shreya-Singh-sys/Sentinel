@@ -437,11 +437,15 @@ const [systems, setSystems] = useState([]);
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
+    const userRef = doc(db, "users", user.uid);
 
     // Real-time listener for current user's assignment
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
-      if (doc.exists() && doc.data().currentAssignment) {
-        setAssignment(doc.data().currentAssignment);
+    const unsub = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.currentAssignment) {
+          setAssignment(data.currentAssignment);
+        }
       }
     });
 
@@ -574,7 +578,27 @@ useEffect(() => {
 
   return () => unsubStatus();
 }, [isEmergencyActive]); // Dependency array mein isEmergencyActive rakhein
+  useEffect(() => {
+  const user = auth.currentUser;
+  if (!user) return;
 
+  // ✅ Sumit ke login UID wale document ko listen karein
+  const userRef = doc(db, "users", user.uid);
+  
+  const unsub = onSnapshot(userRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      console.log("Current user data updated:", data);
+      
+      // ✅ Agar currentAssignment field maujood hai toh state update karein
+      if (data.currentAssignment) {
+        setAssignment(data.currentAssignment);
+      }
+    }
+  });
+
+  return () => unsub();
+}, []);
 
 
 
@@ -792,7 +816,7 @@ useEffect(() => {
             'bg-blue-500 shadow-blue-200'}`}
         >
           <Icon 
-            name={log.type === 'danger' ? 'campaign' : log.type === 'warning' ? 'detector_smoke' : 'shield_check'} 
+            name={log.type === 'danger' ? 'campaign' : log.type === 'warning' ? 'detector_smoke' : 'shield'} 
             filled 
             className="text-white text-lg"
           />

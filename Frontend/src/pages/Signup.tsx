@@ -53,38 +53,91 @@ export default function SignUpPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // const handleRegister = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (formData.password !== formData.confirmPassword) {
+  //     alert("Passwords do not match!");
+  //     return;
+  //   }
+  //   setLoading(true);
+  //   try {
+  //     const response = await fetch("http://localhost:5000/api/auth/signup", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         email: formData.email,
+  //         password: formData.password,
+  //         role: role,
+  //         fullName: formData.fullName,
+  //         extraInfo: { address: formData.address, bloodGroup: formData.bloodGroup }
+  //       }),
+  //     });
+  //     const data = await response.json();
+  //     if (response.ok) {
+  //       alert("Registration Successful!");
+  //       navigate("/login");
+  //     } else {
+  //       alert(data.error || "Signup Failed");
+  //     }
+  //   } catch (error) {
+  //     alert("Backend server connection failed!");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
+  e.preventDefault();
+  if (formData.password !== formData.confirmPassword) {
+    alert("Passwords do not match!");
+    return;
+  }
+  setLoading(true);
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        role: role, // 'staff', 'admin', 'guest'
+        
+        // ✅ 1. 'fullName' ki jagah 'name' bhi bhejein taaki Directory refresh ho
+        name: formData.fullName, 
+        fullName: formData.fullName, 
+
+        // ✅ 2. 'roleType' add karein taaki Admin ki Directory query ise pakad sake
+        roleType: role, 
+
+        // ✅ 3. Extra Fields jo Admin Directory mein dikhte hain
+        jobTitle: role === 'staff' ? "Floor Warden" : role, // Default title
+        phone: "Not Provided", // Agar phone input nahi hai toh default dein
+        
+        extraInfo: { 
+          address: formData.address, 
+          bloodGroup: formData.bloodGroup,
+          workingPlace: formData.workingPlace 
+        },
+
+        // ✅ 4. Default Assignment taaki Staff Dashboard crash na ho
+        currentAssignment: { floor: "-", sector: "-", taskType: "Waiting..." },
+        status: role === 'staff' ? "on-duty" : "checked-in",
+        isVerified: false
+      }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      alert("Registration Successful!");
+      navigate("/login");
+    } else {
+      alert(data.error || "Signup Failed");
     }
-    setLoading(true);
-    try {
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          role: role,
-          fullName: formData.fullName,
-          extraInfo: { address: formData.address, bloodGroup: formData.bloodGroup }
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        alert("Registration Successful!");
-        navigate("/login");
-      } else {
-        alert(data.error || "Signup Failed");
-      }
-    } catch (error) {
-      alert("Backend server connection failed!");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    alert("Backend server connection failed!");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="auth-page-root" style={{ 
